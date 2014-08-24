@@ -1,4 +1,5 @@
 ﻿using Accelerated_Delivery_Win;
+using BEPUphysics.Entities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -47,6 +48,10 @@ namespace LD30
         public Model bridge;
         #endregion
 
+        #region props
+        public PropCategory GeneralCatergory = new PropCategory("General");
+        #endregion
+
         public Loader(ContentManager content)
         {
             this.content = content;
@@ -54,7 +59,7 @@ namespace LD30
 
         public IEnumerator<float> GetEnumerator()
         {
-            totalItems = 3 + 9;
+            totalItems = 3 + 9 + 1 + 1;
 
             #region Font
             SmallerFont = content.Load<SpriteFont>("font/smallfont");
@@ -104,6 +109,17 @@ namespace LD30
             Instructions_Xbox = content.Load<Texture2D>("gui/instructions_xbox");
             yield return progress();
             Instructions_PC = content.Load<Texture2D>("gui/instructions_pc");
+            yield return progress();
+            #endregion
+
+            #region general models
+            bridge = content.Load<Model>("models/bridge");
+            yield return progress();
+            #endregion
+
+            #region props
+            GeneralCatergory.Add(new Prop(content.Load<Model>("models/general/cube"), "Cube", "The basic building block of all life.",
+                (p, s) => new BEPUphysics.Entities.Prefabs.Box(p, s.X, s.Y, s.Z)));
             yield return progress();
             #endregion
         }

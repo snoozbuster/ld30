@@ -18,6 +18,7 @@ namespace LD30
 
         public readonly Model Model;
         public readonly string Description;
+        public readonly string Name;
         public readonly int ID;
         public PropCategory Category { get; internal set; }
         public readonly Func<Vector3, Vector3, Entity> EntityCreator;
@@ -26,9 +27,10 @@ namespace LD30
 
         public bool Unlocked { get; private set; }
 
-        public Prop(Model model, string desc, Func<Vector3, Vector3, Entity> creator, Func<bool> unlock = null)
+        public Prop(Model model, string name, string desc, Func<Vector3, Vector3, Entity> creator, Func<bool> unlock = null)
         {
             ID = currentId++;
+            Name = name;
             Model = model;
             Description = desc;
             EntityCreator = creator;

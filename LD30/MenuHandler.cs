@@ -724,7 +724,7 @@ namespace LD30
                 public WorldSelectMenu(Loader l)
                 {
                     float x = (640 - (rectWidth / 2f)) * RenderingDevice.TextureScaleFactor.X;
-                    float y = 120 * RenderingDevice.TextureScaleFactor.Y - (rectHeight * RenderingDevice.TextureScaleFactor.Y) / 2f;
+                    float y = 105 * RenderingDevice.TextureScaleFactor.Y - (rectHeight * RenderingDevice.TextureScaleFactor.Y) / 2f;
                     int i = 0;
                     string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
                     paths = new string[5];
@@ -766,6 +766,11 @@ namespace LD30
                     selectedControl = controlArray[0];
                     deleteMenu = false;
                     confirmMenu.Reset();
+
+                    string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
+                    paths = new string[5];
+                    for(int j = 0; j < 5; j++)
+                        paths[j] = j < files.Length ? files[j] : null;
                 }
 
                 public override void Draw(GameTime gameTime)

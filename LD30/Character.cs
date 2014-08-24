@@ -37,19 +37,20 @@ namespace LD30
             if(Input.ControlScheme == ControlScheme.Keyboard)
             {
                 if(Input.KeyboardState.IsKeyDown(Keys.W) || Input.KeyboardState.IsKeyDown(Keys.Up))
-                    movementDir += new Vector2(0, 1);
-                if(Input.KeyboardState.IsKeyDown(Keys.S) || Input.KeyboardState.IsKeyDown(Keys.Down))
-                    movementDir += new Vector2(0, -1);
-                if(Input.KeyboardState.IsKeyDown(Keys.A) || Input.KeyboardState.IsKeyDown(Keys.Left))
-                    movementDir += new Vector2(-1, 0);
-                if(Input.KeyboardState.IsKeyDown(Keys.D) || Input.KeyboardState.IsKeyDown(Keys.Right))
                     movementDir += new Vector2(1, 0);
+                if(Input.KeyboardState.IsKeyDown(Keys.S) || Input.KeyboardState.IsKeyDown(Keys.Down))
+                    movementDir += new Vector2(-1, 0);
+                if(Input.KeyboardState.IsKeyDown(Keys.A) || Input.KeyboardState.IsKeyDown(Keys.Left))
+                    movementDir += new Vector2(0, -1);
+                if(Input.KeyboardState.IsKeyDown(Keys.D) || Input.KeyboardState.IsKeyDown(Keys.Right))
+                    movementDir += new Vector2(0, 1);
             }
             else
             {
                 movementDir = Input.CurrentPad.ThumbSticks.Left;
             }
-            Entity.LinearVelocity = new Vector3(movementDir, Entity.LinearVelocity.Z);
+            movementDir.Normalize();
+            Entity.LinearVelocity = new Vector3(movementDir, Entity.LinearVelocity.Z) * 13;
         }
 
         public void Draw(Microsoft.Xna.Framework.GameTime gameTime)

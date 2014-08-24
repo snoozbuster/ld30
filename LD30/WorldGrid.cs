@@ -19,6 +19,8 @@ namespace LD30
         private object queueLock = new object();
 
         public World Host { get { return connectedWorlds[0]; } }
+        public World[] Worlds { get { return connectedWorlds.ToArray(); } }
+        public BaseModel[] Bridges { get { return bridges.ToArray(); } }
 
         Character character;
 

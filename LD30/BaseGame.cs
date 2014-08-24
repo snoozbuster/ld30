@@ -1,16 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Media;
 using Accelerated_Delivery_Win;
 using Microsoft.Win32;
-using System.Windows.Forms;
 using System.IO;
 
 namespace LD30
@@ -33,6 +27,9 @@ namespace LD30
 
         public WorldGrid WorldGrid { get; private set; }
         private Editor editor;
+
+        private Character character;
+        private Camera camera;
 
         public BaseGame()
         {
@@ -83,6 +80,9 @@ namespace LD30
             BGM.IsLooped = true;
             BGM.Play();
 
+            character = new Character(null, new BEPUphysics.Entities.Prefabs.Box(Vector3.Zero, 1, 1, 1));
+            camera = new Camera(this, character);
+
             GameManager.Initialize(null, Content.Load<SpriteFont>("font/font"), null);
         }
 
@@ -127,7 +127,27 @@ namespace LD30
             }
             else
             {
+                GameState statePrior = GameManager.State;
                 MenuHandler.Update(gameTime);
+                bool stateChanged = GameManager.State != statePrior;
+
+                if(GameManager.State == GameState.Running)
+                {
+                    IsMouseVisible = false;
+                    if((Input.CheckKeyboardJustPressed(Keys.Escape) ||
+                        Input.CheckXboxJustPressed(Buttons.Start)) && !stateChanged)
+                    {
+                        //MediaSystem.PlaySoundEffect(SFXOptions.Pause);
+                        GameManager.State = GameState.Paused;
+                        IsMouseVisible = true;
+                    }
+                    else
+                    {
+                        character.Update(gameTime);
+                        camera.Update(gameTime);
+                        GameManager.Space.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+                    }
+                }
             }
 
             base.Update(gameTime);
@@ -165,6 +185,8 @@ namespace LD30
 
         public void DrawScene(GameTime gameTime)
         {
+            foreach(World w in WorldGrid.Worlds)
+                w.Draw(camera);
         }
 
         public void Start(string path, bool created)
@@ -175,22 +197,26 @@ namespace LD30
             else
                 w = new World(Path.GetFileNameWithoutExtension(path));
 
-            // todo
-            Character character = new Character(null, null);
-
             WorldGrid = new WorldGrid(w, character);
             editor = new Editor(w);
-            //GameManager.State = GameState.Running;
+            GameManager.State = GameState.Running;
+
+            w.AddToSpace(GameManager.Space);
+            if(character.Entity.Space == null)
+                GameManager.Space.Add(character.Entity);
         }
 
         public void End()
         {
-
+            WorldGrid.Host.SaveToFile();
         }
 
         protected override void OnExiting(object sender, EventArgs args)
         {
-            OnlineHandler.UploadWorld(WorldGrid.Host);
+            if(WorldGrid != null)
+            {
+                //OnlineHandler.UploadWorld(WorldGrid.Host);
+            }
             base.OnExiting(sender, args);
         }
         

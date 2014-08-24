@@ -7,7 +7,7 @@ using System.Text;
 
 namespace LD30
 {
-    class Camera
+    public class Camera
     {
         public Matrix WorldMatrix { get { return Matrix.Identity; } }
         public Matrix ViewMatrix { get; private set; }

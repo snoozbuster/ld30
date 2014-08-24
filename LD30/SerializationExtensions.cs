@@ -27,8 +27,8 @@ namespace LD30
         public static void Write(this BinaryWriter writer, PropInstance i)
         {
             writer.Write(i.BaseProp.ID);
-            writer.Write(i.Scale);
             writer.Write(i.Position);
+            writer.Write(i.Scale);
             writer.Write(i.RotationAngle);
             writer.Write(i.Color);
         }
