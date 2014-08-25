@@ -27,6 +27,7 @@ namespace LD30
         public SoundEffectInstance BGM;
 
         public WorldGrid WorldGrid { get; private set; }
+        private World lastOpenWorld;
         private Editor editor;
 
         private Character character;
@@ -222,6 +223,7 @@ namespace LD30
         {
             if(WorldGrid != null)
             {
+                lastOpenWorld = WorldGrid.Host;
                 GameManager.Space.Remove(WorldGrid);
                 character.Entity.Deactivate();
                 WorldGrid.Host.SaveToFile();
@@ -234,6 +236,10 @@ namespace LD30
             {
                 WorldGrid.Host.SaveToFile();
                 //OnlineHandler.UploadWorld(WorldGrid.Host);
+            }
+            else if(lastOpenWorld != null)
+            {
+                //OnlineHandler.UploadWorld(lastOpenWorld);
             }
             base.OnExiting(sender, args);
         }

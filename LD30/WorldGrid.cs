@@ -5,6 +5,7 @@ using BEPUutilities;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -16,6 +17,8 @@ namespace LD30
         private List<World> connectedWorlds = new List<World>();
         private List<PropInstance> bridges = new List<PropInstance>();
 
+        private List<Vector3> usedPoints = new List<Vector3>();
+        private Queue<string> localWorlds = new Queue<string>();
         private Queue<World> readyWorlds = new Queue<World>();
         private Queue<int> linkedWorlds = new Queue<int>();
         private object queueLock = new object();
@@ -28,14 +31,25 @@ namespace LD30
 
         public WorldGrid(World host, Character character)
         {
-            foreach(PropCategory category in PropCategory.Categories)
-                foreach(Prop prop in category.Props)
-                    foreach(ModelMesh mesh in prop.Model.Meshes)
-                        foreach(ModelMeshPart part in mesh.MeshParts)
-                            part.Effect = RenderingDevice.Shader;
-
             this.character = character;
             connectedWorlds.Add(host);
+
+            List<string> local = new List<string>();
+            foreach(string name in Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly))
+                if(Path.GetFileNameWithoutExtension(name) != host.OwnerName)
+                    local.Add(name);
+            int count = 100;
+            Random r = new Random();
+            while(count > 0 && local.Count > 0)
+            {
+                int index = r.Next(0, local.Count);
+                string temp = local[0];
+                local[0] = local[index];
+                local[index] = local[0];
+                count--;
+            }
+            foreach(string s in local)
+                localWorlds.Enqueue(s);
 
             Thread t = new Thread(new ThreadStart(threadedWorldDownload));
             t.IsBackground = true;
@@ -97,9 +111,34 @@ namespace LD30
                 {
                     foreach(paste p in newPastes)
                     {
-                        Vector3 dir = randDir();
-                        int index = r.Next(0, connectedWorlds.Count);
-                        World w = new World(p, connectedWorlds[index].WorldPosition + dir * World.MaxSideLength * 2 - dir * 3);
+                        if(readyWorlds.Select(d => p.paste_title == d.OwnerName).Contains(true))
+                            continue;
+
+                        Vector3 worldPos;
+                        int index;
+                        // sometimes include a local world
+                        if(localWorlds.Count > 0 && r.Next(0, 4) == 0)
+                        {
+                            string filename = localWorlds.Dequeue();
+                            do
+                            {
+                                Vector3 dir = randDir();
+                                index = r.Next(0, connectedWorlds.Count);
+                                worldPos = connectedWorlds[index].WorldPosition + dir * World.MaxSideLength * 2 - dir * 3;
+                            } while(usedPoints.Contains(worldPos));
+
+                            readyWorlds.Enqueue(new World(Path.GetFileNameWithoutExtension(filename), File.ReadAllText(filename), worldPos));
+                            linkedWorlds.Enqueue(index);
+                        }
+
+                        do
+                        {
+                            Vector3 dir = randDir();
+                            index = r.Next(0, connectedWorlds.Count);
+                            worldPos = connectedWorlds[index].WorldPosition + dir * World.MaxSideLength * 2 - dir * 3;
+                        }while(usedPoints.Contains(worldPos));
+
+                        World w = new World(p, worldPos);
                         readyWorlds.Enqueue(w);
                         linkedWorlds.Enqueue(index);
                     }

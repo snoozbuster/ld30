@@ -75,6 +75,10 @@ namespace LD30
 
         private HelpfulTextBox text;
 
+        private const string placingHelpText = "R : Rotate object\nMouse wheel : Scale object\nClick : Place object\nRight click : Delete object\nH : Toggle help";
+        private bool showHelp = true;
+        private Rectangle helpTextRect;
+
         public Editor(World w, Character c)
         {
             character = c;
@@ -142,6 +146,8 @@ namespace LD30
             text = new HelpfulTextBox(textRectangle, () => Program.Game.Loader.SmallerFont);
             text.SetTextColor(Color.Black);
             textRectangle.Inflate(3, 3);
+
+            helpTextRect = new Rectangle(1280 - 250 - 20, 720 - 90 - 20, 250, 90);
         }
 
         public void Open()
@@ -154,9 +160,9 @@ namespace LD30
             if(!IsOpen)
                 return;
 
+            RenderingDevice.SpriteBatch.Begin();
             if(state == EditorState.Menu)
             {
-                RenderingDevice.SpriteBatch.Begin();
                 background.Draw();
                 RenderingDevice.SpriteBatch.Draw(Program.Game.Loader.EmptyTex, textRectangle, Color.LightSlateGray * 0.3f);
                 for(int i = 0; i < tabs.Length; i++)
@@ -188,8 +194,14 @@ namespace LD30
                         palette[i]);
                     colors[i].Draw(i == selectedColor ? selectTint : (i == hoveredColor ? hoverTint : Color.White));
                 }
-                RenderingDevice.SpriteBatch.End();
             }
+            else if(showHelp)
+            {
+                RenderingDevice.SpriteBatch.Draw(Program.Game.Loader.EmptyTex, helpTextRect, Color.LightSlateGray * 0.5f);
+                RenderingDevice.SpriteBatch.DrawString(Program.Game.Loader.SmallerFont, placingHelpText,
+                    new Vector2(helpTextRect.X + 5, helpTextRect.Y + 5), Color.Black);
+            }
+            RenderingDevice.SpriteBatch.End();
         }
 
         public void Update(Microsoft.Xna.Framework.GameTime gameTime)
@@ -199,6 +211,8 @@ namespace LD30
 
             if(state == EditorState.Placing)
             {
+                if(Input.CheckKeyboardJustPressed(Keys.H))
+                    showHelp = !showHelp;
                 if(Input.CheckKeyboardJustPressed(Microsoft.Xna.Framework.Input.Keys.R))
                 {
                     placingObject.RotationAngle = placingObject.RotationAngle + MathHelper.PiOver2;
@@ -266,13 +280,13 @@ namespace LD30
                                         break;
                                 }
                             }
-                            if(placingObject.BaseProp.CanPlaceOnGround && instance.BaseProp.IsGround && result.HitData.Normal == BEPUutilities.Vector3.UnitZ)
+                            if(placingObject.BaseProp.CanPlaceOnGround && instance.BaseProp.IsGround)
                             {
                                 currGridPos = instance.Position + Vector3.UnitZ;
                                 placingObject.Position = currGridPos;
                                 placingObject.Entity.Position = placingObject.BaseProp.EntityCreator(currGridPos, placingObject.CorrectedScale).Position; // this is so wasteful
                                 validLocation = placingObject.BaseProp.CanPlaceOnWall ? EditableWorld.GridOpen(placingObject.CorrectedDimensions, placingObject.CorrectedScale, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z) :
-                                                                                       EditableWorld.ValidPosition(placingObject, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
+                                                                                        EditableWorld.ValidPosition(placingObject, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                 break;
                             }
                         }

@@ -454,7 +454,7 @@ namespace LD30
 
                 selectMenu = new WorldSelectMenu(loader);
 
-                start = new MenuButton(loader.startButton, delegate { selectingWorld = true; });
+                start = new MenuButton(loader.startButton, delegate { selectMenu.Reset(); selectingWorld = true; });
                 instructions = new MenuButton(loader.instructionsButton, delegate { GameManager.State = GameState.Menuing_HiS; });
                 quit = new MenuButton(loader.quitButton, delegate { GameManager.State = GameState.Exiting; });
 
@@ -488,16 +488,12 @@ namespace LD30
                     {
                         selectingWorld = false;
                         MediaSystem.PlaySoundEffect(SFXOptions.Box_Death);
-                        selectMenu.Reset();
                     }
                     else
                     {
                         selectMenu.Update(gameTime);
                         if(WorldSelectMenu.Finished)
-                        {
-                            selectMenu.Reset();
                             selectingWorld = false;
-                        }
                     }
                     return;
                 }
@@ -525,10 +521,7 @@ namespace LD30
                     float x = (640 - (rectWidth / 2f)) * RenderingDevice.TextureScaleFactor.X;
                     float y = 105 * RenderingDevice.TextureScaleFactor.Y - (rectHeight * RenderingDevice.TextureScaleFactor.Y) / 2f;
                     int i = 0;
-                    string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
-                    paths = new string[5];
-                    for(int j = 0; j < 5; j++)
-                        paths[j] = j < files.Length ? files[j] : null;
+                    GetPaths();
                     WorldSlotButton b1 = new WorldSlotButton(paths[i], new Sprite(delegate { return l.worldSelectButton; }, new Vector2(x, y + i++ * ((rectHeight + 5) * RenderingDevice.TextureScaleFactor.Y)), null, Sprite.RenderPoint.UpLeft));
                     WorldSlotButton b2 = new WorldSlotButton(paths[i], new Sprite(delegate { return l.worldSelectButton; }, new Vector2(x, y + i++ * ((rectHeight + 5) * RenderingDevice.TextureScaleFactor.Y)), null, Sprite.RenderPoint.UpLeft));
                     WorldSlotButton b3 = new WorldSlotButton(paths[i], new Sprite(delegate { return l.worldSelectButton; }, new Vector2(x, y + i++ * ((rectHeight + 5) * RenderingDevice.TextureScaleFactor.Y)), null, Sprite.RenderPoint.UpLeft));
@@ -557,6 +550,14 @@ namespace LD30
                         });
                 }
 
+                public void GetPaths()
+                {
+                    string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
+                    paths = new string[5];
+                    for(int j = 0; j < 5; j++)
+                        paths[j] = j < files.Length ? files[j] : null;
+                }
+
                 public void Reset()
                 {
                     Finished = false;
@@ -566,10 +567,7 @@ namespace LD30
                     deleteMenu = false;
                     confirmMenu.Reset();
 
-                    string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
-                    paths = new string[5];
-                    for(int j = 0; j < 5; j++)
-                        paths[j] = j < files.Length ? files[j] : null;
+                    GetPaths();
                 }
 
                 public override void Draw(GameTime gameTime)

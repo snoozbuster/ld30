@@ -28,13 +28,17 @@ namespace LD30
 
         private PropInstance[, ,] grid = new PropInstance[MaxSideLength, MaxSideLength, MaxHeight];
 
-        private World(string name, string data)
+        public World(string name, string data, Vector3 worldPos)
         {
-            WorldPosition = Vector3.Zero;
+            WorldPosition = worldPos;
             OwnerName = name;
             objects = new List<PropInstance>();
             createWorld(new BinaryReader(new MemoryStream(Convert.FromBase64String(data))));
         }
+
+        public World(string name, string data)
+            : this(name, data, Vector3.Zero)
+        { }
 
         public World(string name)
         {
@@ -128,14 +132,14 @@ namespace LD30
                             case 8: if(z != 7)
                                 {
                                     Vector3 vscale = Vector3.One * (r.Next(5) == 0 ? 2 : 1);
-                                    if(ValidPosition(Prop.PropAssociations[5].Dimensions, vscale, i, j, z))
-                                        AddObject(Prop.PropAssociations[5].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
+                                    if(ValidPosition(Program.Game.Loader.ExteriorCategory.Props[0].Dimensions, vscale, i, j, z))
+                                        AddObject(Program.Game.Loader.ExteriorCategory.Props[0].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
                                             vscale, MathHelper.PiOver2 * r.Next(0, 4), Microsoft.Xna.Framework.Color.DarkGray, true, this), i, j, z);
                                 }
                                 break;
                             case 12: if(z < 3)
-                                    if(ValidPosition(Prop.PropAssociations[6].Dimensions, i, j, z))
-                                        AddObject(Prop.PropAssociations[6].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
+                                    if(ValidPosition(Program.Game.Loader.ExteriorCategory.Props[1].Dimensions, i, j, z))
+                                        AddObject(Program.Game.Loader.ExteriorCategory.Props[1].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
                                             Vector3.One, 0, Microsoft.Xna.Framework.Color.ForestGreen, true, this), i, j, z);
                                 break;
                         }
@@ -198,9 +202,9 @@ namespace LD30
             {
                 // this loop uses the contents of dir to dynamically "select" two loops to run.
                 // I can't imagine what weird havoc it would wreak if you fed it a non-basis vector
-                for(int ii = i; ii < (dir.X == 0 ? scale.X * dim.X + i : 1); ii++)
-                    for(int jj = j; jj < (dir.Y == 0 ? dim.Y * scale.Y + j : 1); jj++)
-                        for(int zz = z; zz < (dir.Z == 0 ? dim.Z * scale.Z + z : 1); zz++)
+                for(int ii = i; ii < (dir.X == 0 ? scale.X * dim.X + i : i+1); ii++)
+                    for(int jj = j; jj < (dir.Y == 0 ? dim.Y * scale.Y + j : j+1); jj++)
+                        for(int zz = z; zz < (dir.Z == 0 ? dim.Z * scale.Z + z : z+1); zz++)
                             if((grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z] == null) || !grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z].BaseProp.IsGround)
                                 return false;
             }
