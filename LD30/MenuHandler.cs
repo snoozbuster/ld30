@@ -26,11 +26,8 @@ namespace LD30
 
         private static PauseMenu pauseMenu;
         private static MainMenu mainMenu;
-        private static GamePadDCMenu disconnectMenu;
         private static GameOverMenu gameOverMenu;
         private static ExitMenu exitMenu;
-        private static GamePadQueryMenu queryMenu;
-        private static EndingMenu endingMenu;
         private static InstructionsMenu instructionsMenu;
 
         private static Loader loader;
@@ -40,11 +37,8 @@ namespace LD30
             loader = l;
             pauseMenu = new PauseMenu();
             mainMenu = new MainMenu();
-            disconnectMenu = new GamePadDCMenu();
             exitMenu = new ExitMenu();
-            queryMenu = new GamePadQueryMenu();
             instructionsMenu = new InstructionsMenu();
-            endingMenu = new EndingMenu();
             gameOverMenu = new GameOverMenu();
         }
 
@@ -58,38 +52,7 @@ namespace LD30
                     break;
                 case GameState.Paused: pauseMenu.Draw(gameTime);
                     break;
-                case GameState.Ending:
-                    endingMenu.Draw(gameTime);
-                    break;
-                case GameState.Paused_DC:
-                    switch(GameManager.PreviousState)
-                    {
-                        case GameState.GameOver: gameOverMenu.Draw(gameTime);
-                            break;
-                        case GameState.MainMenu: mainMenu.Draw(gameTime);
-                            break;
-                        case GameState.Paused: pauseMenu.Draw(gameTime);
-                            break;
-                        case GameState.Exiting: exitMenu.Draw(gameTime);
-                            break;
-                    }
-                    disconnectMenu.Draw(gameTime);
-                    break;
                 case GameState.Exiting: exitMenu.Draw(gameTime);
-                    break;
-                case GameState.Paused_PadQuery:
-                    switch(GameManager.PreviousState)
-                    {
-                        case GameState.GameOver: gameOverMenu.Draw(gameTime);
-                            break;
-                        case GameState.MainMenu: mainMenu.Draw(gameTime);
-                            break;
-                        case GameState.Paused: pauseMenu.Draw(gameTime);
-                            break;
-                        case GameState.Exiting: exitMenu.Draw(gameTime);
-                            break;
-                    }
-                    queryMenu.Draw(gameTime);
                     break;
                 case GameState.Menuing_HiS: instructionsMenu.Draw(gameTime);
                     break;
@@ -115,15 +78,6 @@ namespace LD30
                 case GameState.Paused:
                     pauseMenu.Update(gameTime);
                     break;
-                case GameState.Paused_DC:
-                    disconnectMenu.Update(gameTime);
-                    break;
-                case GameState.Paused_PadQuery:
-                    queryMenu.Update(gameTime);
-                    break;
-                case GameState.Ending:
-                    endingMenu.Update(gameTime);
-                    return;
                 case GameState.Menuing_HiS:
                     instructionsMenu.Update(gameTime);
                     break;
@@ -199,8 +153,7 @@ namespace LD30
             /// <returns></returns>
             protected virtual bool detectKeyboardInput()
             {
-                if((Input.CheckKeyboardJustPressed(Keys.Left) ||
-                    Input.CheckXboxJustPressed(Buttons.LeftThumbstickLeft)) && selectedControl.OnLeft != null)
+                if((Input.CheckKeyboardJustPressed(Keys.Left)) && selectedControl.OnLeft != null)
                 {
                     MouseTempDisabled = true;
                     selectedControl.IsSelected = false;
@@ -223,8 +176,7 @@ namespace LD30
                     selectedControl.IsSelected = null;
                     return false;
                 }
-                else if((Input.CheckKeyboardJustPressed(Keys.Right) ||
-                         Input.CheckXboxJustPressed(Buttons.LeftThumbstickRight)) && selectedControl.OnRight != null)
+                else if((Input.CheckKeyboardJustPressed(Keys.Right)) && selectedControl.OnRight != null)
                 {
                     MouseTempDisabled = true;
                     selectedControl.IsSelected = false;
@@ -248,8 +200,7 @@ namespace LD30
                     selectedControl.IsSelected = null;
                     return false;
                 }
-                else if((Input.CheckKeyboardJustPressed(Keys.Up) ||
-                         Input.CheckXboxJustPressed(Buttons.LeftThumbstickUp)) && selectedControl.OnUp != null)
+                else if((Input.CheckKeyboardJustPressed(Keys.Up)) && selectedControl.OnUp != null)
                 {
                     MouseTempDisabled = true;
                     selectedControl.IsSelected = false;
@@ -290,8 +241,7 @@ namespace LD30
                     selectedControl.IsSelected = null;
                     return false;
                 }
-                else if((Input.CheckKeyboardJustPressed(Keys.Down) ||
-                         Input.CheckXboxJustPressed(Buttons.LeftThumbstickDown)) && selectedControl.OnDown != null)
+                else if((Input.CheckKeyboardJustPressed(Keys.Down)) && selectedControl.OnDown != null)
                 {
                     MouseTempDisabled = true;
                     selectedControl.IsSelected = false;
@@ -334,14 +284,12 @@ namespace LD30
 
                 bool? old = selectedControl.IsSelected;
 
-                if(Input.CheckKeyboardJustPressed(Keys.Enter) ||
-                    Input.CheckXboxJustPressed(Buttons.A))
+                if(Input.CheckKeyboardJustPressed(Keys.Enter))
                 {
                     holdingSelection = true;
                     MouseTempDisabled = true;
                 }
-                else if(Input.KeyboardState.IsKeyUp(Keys.Enter) &&
-                    Input.CurrentPad.IsButtonUp(Buttons.A) && holdingSelection)
+                else if(Input.KeyboardState.IsKeyUp(Keys.Enter) && holdingSelection)
                     holdingSelection = false;
 
                 bool buttonDown = holdingSelection && !selectedControl.IsDisabled;
@@ -412,84 +360,6 @@ namespace LD30
         }
         #endregion
 
-        #region Game Pad Disconnected
-        private class GamePadDCMenu : Menu
-        {
-            public GamePadDCMenu()
-            { }
-
-            public override void Draw(GameTime gameTime)
-            {
-#if XBOX
-                SimpleMessageBox.ShowMessageBox("Game Pad Disconnected!", "The primary game pad has become disconnected. Please reconnect it to continue.",
-                    new string[] { "Okay" }, 0, MessageBoxIcon.Error);
-#else
-                if(GameManager.PreviousState == GameState.Running)
-                    Program.Game.DrawScene(gameTime);
-
-                RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.LinearClamp, null, null);
-
-                RenderingDevice.SpriteBatch.Draw(loader.halfBlack, new Rectangle(0, 0, (int)RenderingDevice.Width, (int)RenderingDevice.Height), Color.White);
-                RenderingDevice.SpriteBatch.DrawString(loader.BiggerFont, "The gamepad has become disconnected. Please\nreconnect it, or press the Spacebar to\ncontinue using the keyboard.", new Vector2(RenderingDevice.Width, RenderingDevice.Height) * 0.5f, Color.White, 0, loader.BiggerFont.MeasureString("The gamepad has become disconnected. Please\nreconnect it, or press the Spacebar to\ncontinue using the keyboard.") * 0.5f, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-
-                RenderingDevice.SpriteBatch.End();
-#endif
-            }
-
-            public override void Update(GameTime gameTime)
-            {
-                if(Input.CurrentPad.IsConnected)
-                {
-                    Input.ContinueWithPad();
-                    MediaSystem.PlayAll();
-                }
-#if WINDOWS
-                if(Input.CheckKeyboardJustPressed(Keys.Space))
-                {
-                    Input.ContinueWithKeyboard();
-                    MediaSystem.PlayAll();
-                }
-#endif
-            }
-        }
-        #endregion
-
-        #region Game Pad Query
-        private class GamePadQueryMenu : Menu
-        {
-            public GamePadQueryMenu()
-            { }
-
-            public override void Draw(GameTime gameTime)
-            {
-                if(GameManager.PreviousState == GameState.Running)
-                    Program.Game.DrawScene(gameTime);
-
-                RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.LinearClamp, null, null);
-
-                RenderingDevice.SpriteBatch.Draw(loader.halfBlack, new Rectangle(0, 0, (int)RenderingDevice.Width, (int)RenderingDevice.Height), Color.White);
-                string text = "An Xbox controller has been plugged in. Press\nStart to continue the game using the\ncontroller, or disconnect it to close\nthis prompt.";
-                RenderingDevice.SpriteBatch.DrawString(loader.BiggerFont, text, new Vector2(RenderingDevice.Width, RenderingDevice.Height) * 0.5f, Color.White, 0, loader.BiggerFont.MeasureString(text) * 0.5f, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-
-                RenderingDevice.SpriteBatch.End();
-            }
-
-            public override void Update(GameTime gameTime)
-            {
-                if(!Input.CurrentPad.IsConnected)
-                {
-                    Input.ContinueWithKeyboard();
-                    MediaSystem.PlayAll();
-                }
-                if(Input.CheckXboxJustPressed(Buttons.Start) || Input.CheckXboxJustPressed(Buttons.A))
-                {
-                    Input.ContinueWithPad();
-                    MediaSystem.PlayAll();
-                }
-            }
-        }
-        #endregion
-
         #region Pause
         private class PauseMenu : Menu
         {
@@ -513,7 +383,7 @@ namespace LD30
                 selectedControl = resume;
                 selectedControl.IsSelected = null;
 
-                menu = new ConfirmationMenu("Are you sure you want to return to the main menu?\n                   All progress will be lost.",
+                menu = new ConfirmationMenu("Are you sure you want to return to the main menu?\n      World will be saved and uploaded for others.",
                     delegate { Program.Game.BGM.Volume = 0.5f; GameManager.State = GameState.MainMenu; Program.Game.End(); });
             }
 
@@ -557,8 +427,7 @@ namespace LD30
                     return;
                 }
 
-                if(Input.CheckKeyboardJustPressed(Keys.Escape) ||
-                    Input.CheckXboxJustPressed(Buttons.Start))
+                if(Input.CheckKeyboardJustPressed(Keys.Escape))
                 {
                     GameManager.State = GameState.Running;
                     MediaSystem.PlaySoundEffect(SFXOptions.Pause);
@@ -575,18 +444,9 @@ namespace LD30
         #region Main Menu
         private class MainMenu : Menu
         {
-            private float timerInMilliseconds = 0;
-
-            private bool startBeenPressed;
-            private int timer = 1200;
-            private const int smallerTime = 300;
-            private const int largerTime = 750;
-
             private readonly MenuControl start, instructions;
             private WorldSelectMenu selectMenu;
             private bool selectingWorld = false;
-
-            private bool can_click = false;
 
             public MainMenu()
             {
@@ -595,7 +455,7 @@ namespace LD30
                 selectMenu = new WorldSelectMenu(loader);
 
                 start = new MenuButton(loader.startButton, delegate { selectingWorld = true; });
-                instructions = new MenuButton(loader.instructionsButton, delegate { GameManager.State = GameState.Menuing_HiS; can_click = false; });
+                instructions = new MenuButton(loader.instructionsButton, delegate { GameManager.State = GameState.Menuing_HiS; });
                 quit = new MenuButton(loader.quitButton, delegate { GameManager.State = GameState.Exiting; });
 
                 start.SetDirectionals(null, instructions, null, null);
@@ -610,41 +470,21 @@ namespace LD30
             public override void Draw(GameTime gameTime)
             {
                 RenderingDevice.GraphicsDevice.Clear(Color.White);
-                if(Input.MessagePad == null || (startBeenPressed && timer > 0))
-                {
-                    int time = startBeenPressed ? smallerTime : largerTime;
-
-                    RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.LinearClamp, null, null);
-                    RenderingDevice.GraphicsDevice.Clear(Color.White);
-                    RenderingDevice.SpriteBatch.Draw(loader.mainMenuBackground, new Vector2(0, 0), null, Color.White, 0, Vector2.Zero, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-                    RenderingDevice.SpriteBatch.Draw(loader.mainMenuLogo, new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.15f), null, Color.White, 0.0f, new Vector2(loader.mainMenuLogo.Width, loader.mainMenuLogo.Height) * 0.5f * RenderingDevice.TextureScaleFactor, 0.75f * RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-                    if(timerInMilliseconds % time <= time * 0.5f)
-                    {
-                        Vector2 screenSpot = new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.8f);
-                        RenderingDevice.SpriteBatch.Draw(Program.Game.Loader.pressStart, screenSpot, null, Color.White, 0, new Vector2(Program.Game.Loader.pressStart.Width, Program.Game.Loader.pressStart.Height) * 0.5f * RenderingDevice.TextureScaleFactor,
-                            RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-                    }
-                    RenderingDevice.SpriteBatch.End();
-                }
+                RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.NonPremultiplied, SamplerState.LinearClamp, null, null);
+                RenderingDevice.SpriteBatch.Draw(loader.mainMenuBackground, new Vector2(0, 0), null, Color.White, 0, Vector2.Zero, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
+                RenderingDevice.SpriteBatch.Draw(loader.mainMenuLogo, new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.15f), null, Color.White, 0.0f, new Vector2(loader.mainMenuLogo.Width / 2, loader.mainMenuLogo.Height / 2), 0.75f * RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
+                if(selectingWorld)
+                    selectMenu.Draw(gameTime);
                 else
-                {
-                    startBeenPressed = false;
-                    RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.NonPremultiplied, SamplerState.LinearClamp, null, null);
-                    RenderingDevice.SpriteBatch.Draw(loader.mainMenuBackground, new Vector2(0, 0), null, Color.White, 0, Vector2.Zero, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-                    RenderingDevice.SpriteBatch.Draw(loader.mainMenuLogo, new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.15f), null, Color.White, 0.0f, new Vector2(loader.mainMenuLogo.Width / 2, loader.mainMenuLogo.Height / 2), 0.75f * RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-                    if(selectingWorld)
-                        selectMenu.Draw(gameTime);
-                    else
-                        base.Draw(gameTime);
-                    RenderingDevice.SpriteBatch.End();
-                }
+                    base.Draw(gameTime);
+                RenderingDevice.SpriteBatch.End();
             }
 
             public override void Update(GameTime gameTime)
             {
                 if(selectingWorld)
                 {
-                    if(Input.CheckKeyboardJustPressed(Keys.Escape) || Input.CheckXboxJustPressed(Buttons.B))
+                    if(Input.CheckKeyboardJustPressed(Keys.Escape))
                     {
                         selectingWorld = false;
                         MediaSystem.PlaySoundEffect(SFXOptions.Box_Death);
@@ -657,59 +497,18 @@ namespace LD30
                         {
                             selectMenu.Reset();
                             selectingWorld = false;
-                            timerInMilliseconds = 0;
                         }
                     }
                     return;
                 }
 
-                timerInMilliseconds += gameTime.ElapsedGameTime.Milliseconds;
-                if(startBeenPressed)
-                    timer -= gameTime.ElapsedGameTime.Milliseconds;
-
                 if(!Program.Game.Loading)
                 {
                     if(Input.MessagePad == null)
-                    {
-                        #region Player Select and Loading
-                        Input.PlayerSelect(Program.Game.IsActive);
-                        if(Input.MessagePad != null)
-                        {
-                            MediaSystem.PlaySoundEffect(SFXOptions.Box_Success);
-                            MouseTempDisabled = true;
-                            startBeenPressed = true;
-                            timer = 1200;
-                            timerInMilliseconds %= smallerTime;
-                        }
-                        #endregion
-                    }
-                    else if(Input.MessagePad != null && timer <= 0)
-                    {
-                        if(Input.CheckKeyboardJustPressed(Keys.Escape) || Input.CheckXboxJustPressed(Buttons.B))
-                        {
-                            ReturnToPressStart();
-                            return;
-                        }
-                        if(Input.MouseState.LeftButton == ButtonState.Released)
-                            can_click = true;
-
-                        if(can_click)
-                            base.Update(gameTime);
-                    }
+                        Input.ContinueWithKeyboard();
+                    else
+                        base.Update(gameTime);
                 }
-            }
-
-            private void ReturnToPressStart()
-            {
-                Input.NullMessagePad();
-                startBeenPressed = false;
-                ResetTimer();
-                MediaSystem.PlaySoundEffect(SFXOptions.Box_Death);
-            }
-
-            internal void ResetTimer()
-            {
-                timerInMilliseconds = 0;
             }
 
             private class WorldSelectMenu : Menu
@@ -782,12 +581,12 @@ namespace LD30
                         {
                             if(Input.ControlScheme == ControlScheme.Keyboard)
                                 SymbolWriter.WriteKeyboardIcon(Keys.Back, new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
-                                    new Vector2(40, 10) * RenderingDevice.TextureScaleFactor, true);
+                                    new Vector2(30, 22) * RenderingDevice.TextureScaleFactor, true);
                             else
                                 SymbolWriter.WriteXboxIcon(Buttons.Back, new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
-                                    new Vector2(40, 10) * RenderingDevice.TextureScaleFactor, true);
-                            RenderingDevice.SpriteBatch.DrawString(loader.SmallerFont, "Delete World", new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
-                                    new Vector2(60, 0) * RenderingDevice.TextureScaleFactor, Color.White, 0, Vector2.Zero, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
+                                    new Vector2(30, 22) * RenderingDevice.TextureScaleFactor, true);
+                            RenderingDevice.SpriteBatch.DrawString(loader.Font, "Delete World", new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
+                                    new Vector2(50, 5) * RenderingDevice.TextureScaleFactor, Color.Black, 0, Vector2.Zero, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
                         }
                     if(deleteMenu)
                         confirmMenu.Draw(gameTime);
@@ -808,7 +607,7 @@ namespace LD30
                         }
                         return;
                     }
-                    if(Input.CheckKeyboardJustPressed(Keys.Back) || Input.CheckXboxJustPressed(Buttons.Back))
+                    if(Input.CheckKeyboardJustPressed(Keys.Back))
                         for(int i = 0; i < controlArray.Count; i++)
                             if((controlArray[i].IsSelected == null || (controlArray[i].IsSelected.HasValue && controlArray[i].IsSelected.Value)) &&
                                     paths[i] != null)
@@ -868,7 +667,6 @@ namespace LD30
                             if(f.Filename != null)
                             {
                                 Path = Program.SavePath + f.Filename + ".wld";
-                                File.Create(Path).Close();
                                 created = true;
                             }
                             else
@@ -975,7 +773,7 @@ namespace LD30
 
             public override void Update(GameTime gameTime)
             {
-                if(Input.CheckKeyboardPress(Keys.Enter) || Input.CheckKeyboardPress(Keys.Escape) || Input.CheckXboxPress(Buttons.A) || Input.CheckXboxPress(Buttons.Start)
+                if(Input.CheckKeyboardPress(Keys.Enter) || Input.CheckKeyboardPress(Keys.Escape)
                     || Input.CheckMouseJustClicked(Program.Game.IsActive))
                     GameManager.State = GameState.MainMenu;
             }
@@ -987,26 +785,6 @@ namespace LD30
                     RenderingDevice.SpriteBatch.Draw(instructions_Xbox, Vector2.Zero, Color.White);
                 else if(Input.ControlScheme == ControlScheme.Keyboard)
                     RenderingDevice.SpriteBatch.Draw(instructions_PC, Vector2.Zero, Color.White);
-                RenderingDevice.SpriteBatch.End();
-            }
-        }
-        #endregion
-
-        #region Ending
-        private class EndingMenu : Menu
-        {
-            public EndingMenu() { }
-
-            public override void Update(GameTime gameTime) { }
-
-            public override void Draw(GameTime gameTime)
-            {
-                RenderingDevice.SpriteBatch.Begin();
-
-                RenderingDevice.SpriteBatch.DrawString(loader.BiggerFont, "  Congratulations!\nHere is your prize!",
-                    new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.12f), Color.White, 0,
-                    loader.BiggerFont.MeasureString("  Congratulations!\nHere is your prize!") * 0.5f, 1, SpriteEffects.None, 0);
-                
                 RenderingDevice.SpriteBatch.End();
             }
         }
@@ -1048,7 +826,7 @@ namespace LD30
             public override void Draw(GameTime gameTime)
             {
                 RenderingDevice.SpriteBatch.Draw(loader.halfBlack, new Rectangle(0, 0, (int)RenderingDevice.Width, (int)RenderingDevice.Height), Color.White);
-                RenderingDevice.SpriteBatch.DrawString(font, confirmString, new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.3f), Color.White, 0.0f, confirmStringCenter, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
+                RenderingDevice.SpriteBatch.DrawString(font, confirmString, new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.3f), Color.White, 0.0f, confirmStringCenter, RenderingDevice.TextureScaleFactor * 0.75f, SpriteEffects.None, 0);
                 base.Draw(gameTime);
             }
 
@@ -1878,8 +1656,7 @@ namespace LD30
                 if(!usingMouse.HasValue)
                 {
                     justInvoked = true;
-                    if(Input.CheckKeyboardPress(Keys.Enter) ||
-                        Input.CheckXboxPress(Buttons.A))
+                    if(Input.CheckKeyboardPress(Keys.Enter))
                         usingMouse = false;
                     else // we got in here with the mouse. Probably.
                         usingMouse = true;
@@ -1892,8 +1669,7 @@ namespace LD30
                     IsActive = false;
                     return;
                 }
-                else if((Input.CheckKeyboardPress(Keys.Enter) ||
-                        Input.CheckXboxPress(Buttons.A)) && !justInvoked &&
+                else if((Input.CheckKeyboardPress(Keys.Enter)) && !justInvoked &&
                         !usingMouse.GetValueOrDefault())
                 {
                     IsActive = false;

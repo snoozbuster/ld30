@@ -31,6 +31,7 @@ namespace LD30
             writer.Write(i.Scale);
             writer.Write(i.RotationAngle);
             writer.Write(i.Color);
+            writer.Write(i.Immobile);
         }
 
         public static Vector3 ReadVector3(this BinaryReader reader)
@@ -45,7 +46,7 @@ namespace LD30
 
         public static PropInstance ReadPropInstance(this BinaryReader reader, World w)
         {
-            return Prop.CreateInstance(reader.ReadInt32(), reader.ReadVector3(), reader.ReadVector3(), reader.ReadSingle(), reader.ReadColor(), w);
+            return Prop.CreateInstance(reader.ReadInt32(), reader.ReadVector3(), reader.ReadVector3(), reader.ReadSingle(), reader.ReadColor(), reader.ReadByte() == 1, w);
         }
     }
 }

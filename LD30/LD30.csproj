@@ -77,6 +77,17 @@
   <ItemGroup>
     <Compile Include="Camera.cs" />
     <Compile Include="Character.cs" />
+    <Compile Include="CharacterController\CameraControlScheme.cs" />
+    <Compile Include="CharacterController\CharacterCameraControlScheme.cs" />
+    <Compile Include="CharacterController\CharacterController.cs" />
+    <Compile Include="CharacterController\CharacterControllerInput.cs" />
+    <Compile Include="CharacterController\HorizontalMotionConstraint.cs" />
+    <Compile Include="CharacterController\ICharacterTag.cs" />
+    <Compile Include="CharacterController\QueryManager.cs" />
+    <Compile Include="CharacterController\StanceManager.cs" />
+    <Compile Include="CharacterController\StepManager.cs" />
+    <Compile Include="CharacterController\SupportFinder.cs" />
+    <Compile Include="CharacterController\VerticalMotionConstraint.cs" />
     <Compile Include="Editor.cs" />
     <Compile Include="Loader.cs" />
     <Compile Include="LoadingScreen.cs" />
@@ -88,6 +99,7 @@
     <Compile Include="NameForm.Designer.cs">
       <DependentUpon>NameForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Renderer.cs" />
     <Compile Include="SerializationExtensions.cs" />
     <Compile Include="OnlineHandler.cs" />
     <Compile Include="paste.cs" />

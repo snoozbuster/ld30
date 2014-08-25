@@ -28,12 +28,12 @@ namespace LD30
         {
             using(WebClient client = new WebClient())
             {
-                byte[] xml = client.DownloadData("http://accelerateddeliverygame.com/ld30temp/download.php");
-                // make the serializer happy; all that's probably required is wrapping the returned XML in <ArrayOfPaste> tags
-                xml = Encoding.ASCII.GetBytes("<?xml version=\"1.0\"?>\r\n<ArrayOfPaste xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">").Concat(xml.Skip(3)).Concat(Encoding.ASCII.GetBytes("</ArrayOfPaste>")).ToArray();
-                XmlSerializer serializer = new XmlSerializer(typeof(paste[]));
                 try
                 {
+                    byte[] xml = client.DownloadData("http://accelerateddeliverygame.com/ld30temp/download.php");
+                    // make the serializer happy; all that's probably required is wrapping the returned XML in <ArrayOfPaste> tags
+                    xml = Encoding.ASCII.GetBytes("<?xml version=\"1.0\"?>\r\n<ArrayOfPaste xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">").Concat(xml.Skip(3)).Concat(Encoding.ASCII.GetBytes("</ArrayOfPaste>")).ToArray();
+                    XmlSerializer serializer = new XmlSerializer(typeof(paste[]));
                     paste[] temp = (paste[])serializer.Deserialize(new MemoryStream(xml));
                     return temp;
                 }

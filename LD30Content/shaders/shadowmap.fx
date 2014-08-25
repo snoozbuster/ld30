@@ -4,7 +4,7 @@ float4x4 xWorld;
 float3 xLightPos;
 float xLightPower;
 float xAmbient;
-float3 xColor;
+float4 xColor;
 float3 xLightDir;
 
 float4 xClipPlane;
@@ -78,9 +78,11 @@ struct SSceneVertexToPixel
     float4 Position             : POSITION;
     float4 Pos2DAsSeenByLight    : TEXCOORD0;
 
-    float2 TexCoords            : TEXCOORD1;
+	float2 TexCoords             : TEXCOORD1;
     float4 Position3D            : TEXCOORD2;
 	float4 ClipDistances		 : TEXCOORD3;
+
+	float3 Normal                : TEXCOORD4;
 };
 
 struct SScenePixelToFrame
@@ -88,7 +90,7 @@ struct SScenePixelToFrame
     float4 Color : COLOR0;
 };
 
-SSceneVertexToPixel ShadowedSceneVertexShader(float4 inPos : POSITION, float2 inTexCoords : TEXCOORD0)
+SSceneVertexToPixel ShadowedSceneVertexShader(float4 inPos : POSITION, float3 inNormal : NORMAL)
 {
     SSceneVertexToPixel Output = (SSceneVertexToPixel)0;
     
@@ -100,9 +102,9 @@ SSceneVertexToPixel ShadowedSceneVertexShader(float4 inPos : POSITION, float2 in
 
     Output.Position = mul(inPos, preWorldViewProjection);    
     Output.Pos2DAsSeenByLight = mul(inPos, preLightsWorldViewProjection);    
-    //Output.Normal = normalize(mul(inNormal, (float3x3)xWorld));    
+    Output.Normal = normalize(mul(inNormal, (float3x3)xWorld));    
     Output.Position3D = mul(inPos, xWorld);
-    Output.TexCoords = inTexCoords;    
+    Output.TexCoords = float2(0, 0);    
 
     return Output;
 }
@@ -113,7 +115,7 @@ SScenePixelToFrame ShadowedScenePixelShader(SSceneVertexToPixel PSIn)
 		 clip(PSIn.ClipDistances);
      SScenePixelToFrame Output = (SScenePixelToFrame)0;    
 
-	 float4 baseColor = tex2D(TextureSampler, PSIn.TexCoords);
+	 float4 baseColor = xColor; //tex2D(TextureSampler, PSIn.TexCoords);
 	
 	 if(xPassThroughLighting)
 		{
@@ -157,7 +159,8 @@ SScenePixelToFrame ShadowedScenePixelShader(SSceneVertexToPixel PSIn)
 
      // Wrap lighting with lighting coming straight down (assuming Z is up).
 
-	 float3 Normal = tex2D(NormalSampler, PSIn.TexCoords) * 2.0f - 1;
+	 //float3 Normal = tex2D(NormalSampler, PSIn.TexCoords) * 2.0f - 1;
+	 float3 Normal = PSIn.Normal;
 
 	 float diffuseLightingFactor = DotProduct(xLightPos, PSIn.Position3D, Normal) * 0.5 + 0.5;
 	 diffuseLightingFactor *= xLightPower;

@@ -1,5 +1,6 @@
 ﻿using Accelerated_Delivery_Win;
 using BEPUphysics;
+using BEPUphysics.BroadPhaseEntries.MobileCollidables;
 using BEPUutilities;
 using ConversionHelper;
 using Microsoft.Xna.Framework.Graphics;
@@ -12,10 +13,10 @@ using System.Text;
 
 namespace LD30
 {
-    public class World
+    public class World : ISpaceObject
     {
         public const int MaxSideLength = 32;
-        public const int MaxHeight = 7;
+        public const int MaxHeight = 8;
 
         public readonly string OwnerName;
         public List<PropInstance> Objects { get { return new List<PropInstance>(objects); } }
@@ -25,13 +26,10 @@ namespace LD30
 
         private Texture2D polygonTex;
 
+        private PropInstance[, ,] grid = new PropInstance[MaxSideLength, MaxSideLength, MaxHeight];
+
         private World(string name, string data)
         {
-            effect = new BasicEffect(RenderingDevice.GraphicsDevice);
-            foreach(ModelMesh mesh in Prop.PropAssociations[0].Model.Meshes)
-                foreach(ModelMeshPart part in mesh.MeshParts)
-                    part.Effect = effect;
-
             WorldPosition = Vector3.Zero;
             OwnerName = name;
             objects = new List<PropInstance>();
@@ -40,11 +38,6 @@ namespace LD30
 
         public World(string name)
         {
-            effect = new BasicEffect(RenderingDevice.GraphicsDevice);
-            foreach(ModelMesh mesh in Prop.PropAssociations[0].Model.Meshes)
-                foreach(ModelMeshPart part in mesh.MeshParts)
-                    part.Effect = effect;
-
             OwnerName = name;
             objects = new List<PropInstance>();
             WorldPosition = Vector3.Zero;
@@ -57,11 +50,6 @@ namespace LD30
         /// <param name="paste"></param>
         public World(paste paste, Vector3 worldPos)
         {
-            effect = new BasicEffect(RenderingDevice.GraphicsDevice);
-            foreach(ModelMesh mesh in Prop.PropAssociations[0].Model.Meshes)
-                foreach(ModelMeshPart part in mesh.MeshParts)
-                    part.Effect = effect;
-
             WorldPosition = worldPos;
             OwnerName = paste.paste_title;
             string data = null;
@@ -79,7 +67,7 @@ namespace LD30
             int subSize = size;
             size += 1; // algorithm works best at 2^n+1
 
-            float h = 0.4f; // smoothness constant; higher values are more smooth (0-1)
+            float h = 0.3f; // smoothness constant; higher values are more smooth (0-1), due to post-generation smoothing the initial terrain needs to be very rough
             float ratio = (float)Math.Pow(2, -h);
             int scale = (int)(World.MaxHeight * ratio + 0.5f);
 
@@ -124,8 +112,143 @@ namespace LD30
             for(int i = 0; i < World.MaxSideLength; i++)
                 for(int j = 0; j < World.MaxSideLength; j++)
                     for(int z = 0; z < baseTerrainArray[i, j]; z++)
-                        objects.Add(Prop.PropAssociations[0].CreateInstance(new BEPUutilities.Vector3(i + 0.5f, j + 0.5f, z + 0.5f) + WorldPosition,
-                            Vector3.One, 0, new Microsoft.Xna.Framework.Color(z * (255 / World.MaxHeight), z * (255 / World.MaxHeight), z * (255 / World.MaxHeight)), this));
+                        AddObject(Prop.PropAssociations[0].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
+                            Vector3.One, 0, new Microsoft.Xna.Framework.Color((z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight)), true, this), i, j, z);
+            for(int i = 0; i < World.MaxSideLength; i++)
+                for(int j = 0; j < World.MaxSideLength; j++)
+                {
+                    // generate things after terrain is filled in
+                    int z = baseTerrainArray[i, j];
+                    // chance to generate something
+                    if(z != 0)
+                        switch(r.Next(0, 60))
+                        {
+                            default: break;
+                            case 4:
+                            case 8: if(z != 7)
+                                {
+                                    Vector3 vscale = Vector3.One * (r.Next(5) == 0 ? 2 : 1);
+                                    if(ValidPosition(Prop.PropAssociations[5].Dimensions, vscale, i, j, z))
+                                        AddObject(Prop.PropAssociations[5].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
+                                            vscale, MathHelper.PiOver2 * r.Next(0, 4), Microsoft.Xna.Framework.Color.DarkGray, true, this), i, j, z);
+                                }
+                                break;
+                            case 12: if(z < 3)
+                                    if(ValidPosition(Prop.PropAssociations[6].Dimensions, i, j, z))
+                                        AddObject(Prop.PropAssociations[6].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
+                                            Vector3.One, 0, Microsoft.Xna.Framework.Color.ForestGreen, true, this), i, j, z);
+                                break;
+                        }
+                }
+        }
+
+        public void AddObject(PropInstance instance, int i, int j, int z)
+        {
+            objects.Add(instance);
+            fillGrid(instance, instance.CorrectedDimensions, instance.CorrectedScale, i, j, z);
+            if(Space != null)
+            {
+                Space.Add(instance.Entity);
+                Renderer.Add(instance);
+            }
+        }
+
+        public void RemoveObject(PropInstance instance)
+        {
+            objects.Remove(instance);
+            emptyGrid(instance.CorrectedDimensions, instance.CorrectedScale, (int)instance.Position.X, (int)instance.Position.Y, (int)instance.Position.Z);
+            if(Space != null)
+            {
+                Space.Remove(instance.Entity);
+                Renderer.Remove(instance);
+            }
+        }
+
+        private void emptyGrid(Microsoft.Xna.Framework.Vector3 dim, Microsoft.Xna.Framework.Vector3 scale, int i, int j, int z)
+        {
+            for(int ii = i; ii < dim.X * scale.X + i; ii++)
+                for(int jj = j; jj < dim.Y * scale.Y + j; jj++)
+                    for(int zz = z; zz < dim.Z * scale.Z + z; zz++)
+                        grid[ii, jj, zz] = null;
+        }
+
+        public bool GridOpen(Vector3 dim, int i, int j, int z)
+        {
+            return GridOpen(dim, Vector3.One, i, j, z);
+        }
+
+        public bool HasSupport(Vector3 dim, int i, int j, int z)
+        {
+            return HasSupport(dim, Vector3.One, i, j, z);
+        }
+
+        public bool HasSupport(Vector3 dim, Vector3 scale, int i, int j, int z)
+        {
+            return HasSupport(dim, scale, -Vector3.UnitZ, i, j, z);
+        }
+
+        public bool HasSupport(Vector3 dim, Vector3 scale, Vector3 dir, int i, int j, int z)
+        {
+            if(i + scale.X * dim.X > World.MaxSideLength || j + dim.Y * scale.Y > World.MaxSideLength || z + dim.Z * scale.Z > World.MaxHeight)
+                return false;
+            if(i < 0 || j < 0 || z < 0)
+                return false;
+
+            try
+            {
+                // this loop uses the contents of dir to dynamically "select" two loops to run.
+                // I can't imagine what weird havoc it would wreak if you fed it a non-basis vector
+                for(int ii = i; ii < (dir.X == 0 ? scale.X * dim.X + i : 1); ii++)
+                    for(int jj = j; jj < (dir.Y == 0 ? dim.Y * scale.Y + j : 1); jj++)
+                        for(int zz = z; zz < (dir.Z == 0 ? dim.Z * scale.Z + z : 1); zz++)
+                            if((grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z] == null) || !grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z].BaseProp.IsGround)
+                                return false;
+            }
+            catch(IndexOutOfRangeException)
+            {
+                // walked off the edge of the grid, no space
+                // GridOpen should catch this if used in tandem
+                return false;
+            }
+            return true;
+        }
+
+        public bool ValidPosition(PropInstance instance, int i, int j, int z)
+        {
+            return ValidPosition(instance.CorrectedDimensions, instance.CorrectedScale, i, j, z);
+        }
+
+        public bool ValidPosition(Vector3 dim, int i, int j, int z)
+        {
+            return ValidPosition(dim, Vector3.One, i, j, z);
+        }
+
+        public bool ValidPosition(Vector3 dim, Vector3 scale, int i, int j, int z)
+        {
+            return GridOpen(dim, scale, i, j, z) && HasSupport(dim, scale, i, j, z);
+        }
+
+        public bool GridOpen(Vector3 dim, Vector3 scale, int i, int j, int z)
+        {
+            if(i + scale.X * dim.X > World.MaxSideLength || j + dim.Y * scale.Y > World.MaxSideLength || z + dim.Z * scale.Z > World.MaxHeight)
+                return false;
+            if(i < 0 || j < 0 || z < 0)
+                return false;
+
+            for(int ii = i; ii < scale.X * dim.X + i; ii++)
+                for(int jj = j; jj < dim.Y * scale.Y + j; jj++)
+                    for(int zz = z; zz < dim.Z * scale.Z + z; zz++)
+                        if(grid[ii, jj, zz] != null)
+                            return false;
+            return true;
+        }
+
+        private void fillGrid(PropInstance instance, Vector3 dim, Vector3 scale, int i, int j, int z)
+        {
+            for(int ii = i; ii < dim.X * scale.X + i; ii++)
+                for(int jj = j; jj < dim.Y * scale.Y + j; jj++)
+                    for(int zz = z; zz < dim.Z * scale.Z + z; zz++)
+                        grid[ii, jj, zz] = instance;
         }
 
         private int[,] mask(int[,] baseTerrainArray, int size, Random r)
@@ -317,39 +440,14 @@ namespace LD30
         {
             int num = reader.ReadInt32();
             for(int i = 0; i < num; i++)
-                objects.Add(reader.ReadPropInstance(this));
-        }
-
-        BasicEffect effect;
-
-        public void AddToSpace(Space s)
-        {
-            foreach(PropInstance p in objects)
-                s.Add(p.Entity);
-        }
-
-        public void Draw(Camera c)
-        {
-            RenderingDevice.GraphicsDevice.BlendState = BlendState.Opaque;
-            RenderingDevice.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            RenderingDevice.GraphicsDevice.RasterizerState = RasterizerState.CullNone;
-            RenderingDevice.GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
-            RenderingDevice.GraphicsDevice.SamplerStates[1] = SamplerState.LinearWrap;
-            foreach(PropInstance p in objects)
             {
-                effect.LightingEnabled = true;
-                effect.AmbientLightColor = p.Color.ToVector3();
-                effect.View = MathConverter.Convert(c.ViewMatrix);
-                effect.Projection = MathConverter.Convert(c.ProjectionMatrix);
-                effect.DirectionalLight0.Direction = -Vector3.UnitZ;
-
-                foreach(ModelMesh mesh in p.BaseProp.Model.Meshes)
-                {
-                    effect.World = MathConverter.Convert(MathConverter.Convert(mesh.ParentBone.Transform) * c.WorldMatrix * p.Entity.WorldTransform);
-                    mesh.Draw();
-                }
+                var instance = reader.ReadPropInstance(this);
+                AddObject(instance, (int)instance.Position.X, (int)instance.Position.Y, (int)instance.Position.Z);
             }
+        }
 
+        public void Draw()
+        {
             if(polygonTex != null)
             {
                 RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null);
@@ -383,5 +481,21 @@ namespace LD30
             using(StreamReader reader = new StreamReader(path))
                 return new World(Path.GetFileNameWithoutExtension(path), reader.ReadToEnd());
         }
+
+        public void OnAdditionToSpace(Space newSpace)
+        {
+            foreach(PropInstance p in objects)
+                newSpace.Add(p.Entity);
+        }
+
+        public void OnRemovalFromSpace(Space oldSpace)
+        {
+            foreach(PropInstance p in objects)
+                oldSpace.Remove(p.Entity);
+        }
+
+        public Space Space { get; set; }
+
+        public object Tag { get; set; }
     }
 }

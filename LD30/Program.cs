@@ -1,4 +1,5 @@
 using Accelerated_Delivery_Win;
+using BEPUutilities;
 using System;
 using System.IO;
 
@@ -36,6 +37,12 @@ namespace LD30
                     game.Run();
             }
 #endif
+        }
+
+        public static bool Contains(this BoundingBox b, Vector3 v)
+        {
+            return b.Min.X <= v.X && b.Min.Y <= v.Y && b.Min.Z <= v.Z &&
+                   b.Max.X >= v.X && b.Max.Y >= v.Y && b.Max.Z >= v.Z;
         }
     }
 #endif

@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Input;
 using Accelerated_Delivery_Win;
 using Microsoft.Win32;
 using System.IO;
+using BEPUphysicsDemos.AlternateMovement.Character;
 
 namespace LD30
 {
@@ -69,7 +70,7 @@ namespace LD30
         protected override void LoadContent()
         {
             RenderingDevice.Initialize(Graphics, Program.Cutter, GameManager.Space, Content.Load<Effect>("shaders/shadowmap"));
-            //Renderer.Initialize(Graphics, this, GameManager.Space, Content.Load<Effect>("shaders/shadowmap"));
+            Renderer.Initialize(Graphics, this, GameManager.Space, Content.Load<Effect>("shaders/shadowmap"));
             //Program.Initialize(GraphicsDevice);
             //MyExtensions.Initialize(GraphicsDevice);
             loadingScreen = new LoadingScreen(Content, GraphicsDevice);
@@ -79,9 +80,6 @@ namespace LD30
             BGM = e.CreateInstance();
             BGM.IsLooped = true;
             BGM.Play();
-
-            character = new Character(null, new BEPUphysics.Entities.Prefabs.Box(Vector3.Zero, 1, 1, 1));
-            camera = new Camera(this, character);
 
             GameManager.Initialize(null, Content.Load<SpriteFont>("font/font"), null);
         }
@@ -133,9 +131,8 @@ namespace LD30
 
                 if(GameManager.State == GameState.Running)
                 {
-                    IsMouseVisible = false;
-                    if((Input.CheckKeyboardJustPressed(Keys.Escape) ||
-                        Input.CheckXboxJustPressed(Buttons.Start)) && !stateChanged)
+                    //IsMouseVisible = false;
+                    if((Input.CheckKeyboardJustPressed(Keys.Escape)) && !stateChanged)
                     {
                         //MediaSystem.PlaySoundEffect(SFXOptions.Pause);
                         GameManager.State = GameState.Paused;
@@ -143,8 +140,17 @@ namespace LD30
                     }
                     else
                     {
-                        character.Update(gameTime);
-                        camera.Update(gameTime);
+                        if(editor.IsOpen)
+                            editor.Update(gameTime);
+                        else if(Input.CheckMouseJustClicked(2))
+                        {
+                            editor.Open();
+                            // force character to stop moving
+                            character.Entity.CharacterController.HorizontalMotionConstraint.MovementDirection = Vector2.Zero;
+                        }
+                        character.Update(gameTime, editor.IsOpen);
+                        if(!editor.IsOpen)
+                            camera.Update(gameTime);
                         GameManager.Space.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
                     }
                 }
@@ -165,7 +171,7 @@ namespace LD30
                 beenDrawn = true;
             }
 
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(Color.LightGray);
 
             if(Loading)
             {
@@ -185,12 +191,19 @@ namespace LD30
 
         public void DrawScene(GameTime gameTime)
         {
-            foreach(World w in WorldGrid.Worlds)
-                w.Draw(camera);
+            Renderer.Draw();
+            character.Draw(gameTime);
+            editor.Draw(gameTime);
+            WorldGrid.Draw(camera);
         }
 
         public void Start(string path, bool created)
         {
+            camera = new Camera(this, character);
+            character = new Character(Loader.player, new CharacterControllerInput(GameManager.Space, camera, this));
+            camera.Character = character;
+            Renderer.Camera = camera;
+
             World w;
             if(!created)
                 w = World.FromFile(path);
@@ -198,23 +211,28 @@ namespace LD30
                 w = new World(Path.GetFileNameWithoutExtension(path));
 
             WorldGrid = new WorldGrid(w, character);
-            editor = new Editor(w);
+            editor = new Editor(w, character);
             GameManager.State = GameState.Running;
 
-            w.AddToSpace(GameManager.Space);
-            if(character.Entity.Space == null)
-                GameManager.Space.Add(character.Entity);
+            GameManager.Space.Add(WorldGrid);
+            character.Entity.Activate();
         }
 
         public void End()
         {
-            WorldGrid.Host.SaveToFile();
+            if(WorldGrid != null)
+            {
+                GameManager.Space.Remove(WorldGrid);
+                character.Entity.Deactivate();
+                WorldGrid.Host.SaveToFile();
+            }
         }
 
         protected override void OnExiting(object sender, EventArgs args)
         {
             if(WorldGrid != null)
             {
+                WorldGrid.Host.SaveToFile();
                 //OnlineHandler.UploadWorld(WorldGrid.Host);
             }
             base.OnExiting(sender, args);

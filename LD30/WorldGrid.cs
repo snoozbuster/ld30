@@ -1,6 +1,8 @@
 ﻿using Accelerated_Delivery_Win;
+using BEPUphysics;
 using BEPUphysics.BroadPhaseEntries.MobileCollidables;
 using BEPUutilities;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +11,10 @@ using System.Threading;
 
 namespace LD30
 {
-    public class WorldGrid
+    public class WorldGrid : ISpaceObject
     {
         private List<World> connectedWorlds = new List<World>();
-        private List<BaseModel> bridges = new List<BaseModel>();
+        private List<PropInstance> bridges = new List<PropInstance>();
 
         private Queue<World> readyWorlds = new Queue<World>();
         private Queue<int> linkedWorlds = new Queue<int>();
@@ -20,12 +22,18 @@ namespace LD30
 
         public World Host { get { return connectedWorlds[0]; } }
         public World[] Worlds { get { return connectedWorlds.ToArray(); } }
-        public BaseModel[] Bridges { get { return bridges.ToArray(); } }
+        public PropInstance[] Bridges { get { return bridges.ToArray(); } }
 
         Character character;
 
         public WorldGrid(World host, Character character)
         {
+            foreach(PropCategory category in PropCategory.Categories)
+                foreach(Prop prop in category.Props)
+                    foreach(ModelMesh mesh in prop.Model.Meshes)
+                        foreach(ModelMeshPart part in mesh.MeshParts)
+                            part.Effect = RenderingDevice.Shader;
+
             this.character = character;
             connectedWorlds.Add(host);
 
@@ -100,12 +108,11 @@ namespace LD30
             }
         }
 
-        private BaseModel makeBridge(World w1, World w2)
+        private PropInstance makeBridge(World w1, World w2)
         {
             // todo: calculate bridge pos/rotation
-            BaseModel m = new BaseModel(delegate { return Program.Game.Loader.bridge; },
-                false, null, new Microsoft.Xna.Framework.Vector3());
-            m.Ent.CollisionInformation.Events.DetectingInitialCollision += (sender, other, pair) => {
+            PropInstance m = Program.Game.Loader.bridge.CreateInstance(new Microsoft.Xna.Framework.Vector3(), Vector3.One, 0, new Microsoft.Xna.Framework.Color(0.8f, 0.8f, 0.8f), true, w1);
+            m.Entity.CollisionInformation.Events.DetectingInitialCollision += (sender, other, pair) => {
                 EntityCollidable otherEntity = other as EntityCollidable;
                 if(otherEntity == null || otherEntity.Entity == null)
                     return;
@@ -115,7 +122,8 @@ namespace LD30
                         character.DisplayBridgeText(w1.OwnerName, w2.OwnerName);
                 }
             };
-            m.Ent.CollisionInformation.Events.CollisionEnded += (sender, other, pair) => {
+            m.Entity.CollisionInformation.Events.CollisionEnded += (sender, other, pair) =>
+            {
                 EntityCollidable otherEntity = other as EntityCollidable;
                 if(otherEntity == null || otherEntity.Entity == null)
                     return;
@@ -124,5 +132,45 @@ namespace LD30
             };
             return m;
         }
+
+        public void Draw(Camera camera)
+        {
+            foreach(World w in connectedWorlds)
+                w.Draw();
+        }
+
+        public void OnAdditionToSpace(Space newSpace)
+        {
+            foreach(World w in connectedWorlds)
+            {
+                newSpace.Add(w);
+                foreach(PropInstance i in w.Objects)
+                    Renderer.Add(i);
+            }
+            foreach(PropInstance b in bridges)
+            {
+                newSpace.Add(b.Entity);
+                Renderer.Add(b);
+            }
+        }
+
+        public void OnRemovalFromSpace(Space oldSpace)
+        {
+            foreach(World w in connectedWorlds)
+            {
+                oldSpace.Remove(w);
+                foreach(PropInstance i in w.Objects)
+                    Renderer.Remove(i);
+            }
+            foreach(PropInstance b in bridges)
+            {
+                oldSpace.Remove(b.Entity);
+                Renderer.Remove(b);
+            }
+        }
+
+        public Space Space { get; set; }
+
+        public object Tag { get; set; }
     }
 }
