@@ -26,6 +26,7 @@ namespace LD30
         private enum EditorState { Placing, Menu }
 
         private PropInstance placingObject;
+        private PropInstance hoveredObject;
         private Model cube;
         private bool validLocation;
         private bool collidingWithCharacter;
@@ -55,7 +56,7 @@ namespace LD30
         private Sprite[] colors = new Sprite[12];
         private Texture2D[][] thumbnails = new Texture2D[5][];
 
-        private int selectedColor;
+        private int selectedColor = lightGrey;
         private int hoveredColor = -1;
         private int selectedTab;
         private int hoveredTab = -1;
@@ -289,6 +290,12 @@ namespace LD30
                 if(Input.CheckMouseJustClicked(2))
                 {
                     IsOpen = false;
+                    if(hoveredObject != null)
+                    {
+                        hoveredObject.Transparent = false;
+                        hoveredObject.Alpha = 1;
+                        hoveredObject = null;
+                    }
                     return;
                 }
 
@@ -345,7 +352,56 @@ namespace LD30
                             }
                             break;
                         }
-                //beginPlace(Prop.PropAssociations[0].CreateInstance(new Vector3(), Vector3.One, 0, Color.Beige, false, EditableWorld));
+                if(!Input.CheckMouseWithinCoords(background))
+                {
+                    Vector3 near = RenderingDevice.GraphicsDevice.Viewport.Unproject(new Vector3(Input.MouseState.X, Input.MouseState.Y, 0),
+                        MathConverter.Convert(Renderer.Camera.ProjectionMatrix),
+                        MathConverter.Convert(Renderer.Camera.ViewMatrix),
+                        MathConverter.Convert(Renderer.Camera.WorldMatrix));
+                    Vector3 far = RenderingDevice.GraphicsDevice.Viewport.Unproject(new Vector3(Input.MouseState.X, Input.MouseState.Y, 1),
+                        MathConverter.Convert(Renderer.Camera.ProjectionMatrix),
+                        MathConverter.Convert(Renderer.Camera.ViewMatrix),
+                        MathConverter.Convert(Renderer.Camera.WorldMatrix));
+
+                    Vector3 forward = far - near;
+                    float distance = forward.Length();
+                    forward.Normalize();
+
+                    BEPUphysics.RayCastResult result;
+                    if(EditableWorld.Space.RayCast(new BEPUutilities.Ray(Renderer.Camera.Position, forward), out result))
+                    {
+                        PropInstance instance = result.HitObject.Tag as PropInstance;
+                        if(instance != null && !instance.Immobile)
+                        {
+                            if(hoveredObject != null)
+                            {
+                                hoveredObject.Transparent = false;
+                                hoveredObject.Alpha = 1;
+                            }
+                            hoveredObject = instance;
+                            hoveredObject.Transparent = true;
+                            hoveredObject.Alpha = 0.3f;
+                            if(Input.CheckMouseJustClicked(Program.Game.IsActive))
+                            {
+                                EditableWorld.RemoveObject(hoveredObject);
+                                beginPlace(hoveredObject);
+                                hoveredObject = null;
+                            }
+                        }
+                        else if(hoveredObject != null && hoveredObject != instance)
+                        {
+                            hoveredObject.Transparent = false;
+                            hoveredObject.Alpha = 1;
+                            hoveredObject = null;
+                        }
+                    }
+                    else if(hoveredObject != null)
+                    {
+                        hoveredObject.Transparent = false;
+                        hoveredObject.Alpha = 1;
+                        hoveredObject = null;
+                    }
+                }
             }
         }
 
