@@ -130,7 +130,7 @@ namespace LD30
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/inclinecorner"), new Vector3(2, 2, 1), false, false, false, true, "Corner Stairs", "For those hard-to-reach spots.",
                 (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/inclinecorner"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Solid); e.Position = p + new Vector3(1, 1, 0.5f); return e; }));
             yield return progress();
-            GeneralCategory.Add(new Prop(content.Load<Model>("models/general/littlebridge"), new Vector3(3, 1, 1), false, false, true, false, "Bridge", "Somewhat more stylish than cubes.",
+            GeneralCategory.Add(new Prop(content.Load<Model>("models/general/littlebridge"), new Vector3(3, 1, 1), false, true, true, false, "Bridge", "Somewhat more stylish than cubes.",
                 (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(1.5f, 0.5f, 0.5f) * s, s.X * 3, s.Y, s.Z)));
             yield return progress();
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/pyramid"), new Vector3(2, 2, 1), false, false, false, true, "Pyramid", "I can't fathom what this would be useful for.",

@@ -226,7 +226,7 @@ namespace LD30
                 for(int ii = i; ii < (dir.X == 0 ? scale.X * dim.X + i : i+1); ii++)
                     for(int jj = j; jj < (dir.Y == 0 ? dim.Y * scale.Y + j : j+1); jj++)
                         for(int zz = z; zz < (dir.Z == 0 ? dim.Z * scale.Z + z : z+1); zz++)
-                            if((grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z] == null) || !grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z].BaseProp.IsGround)
+                            if((grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z] == null) || !(grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z].BaseProp.IsGround || grid[ii + (int)dir.X, jj + (int)dir.Y, zz + (int)dir.Z].BaseProp.IsWall))
                                 return false;
             }
             catch(IndexOutOfRangeException)

@@ -76,7 +76,7 @@ namespace LD30
 
         private HelpfulTextBox text;
 
-        private const string placingHelpText = "R : Rotate object\nClick : Place object\nRight click : Delete object\nH : Toggle help";
+        private const string placingHelpText = "R : Rotate object\nClick : Place object\nRight click : Delete object\nHold Shift: Place multiple\nH : Toggle help";
         private bool showHelp = true;
         private Rectangle helpTextRect;
 
@@ -266,7 +266,13 @@ namespace LD30
                             Vector3 temp;
                             if(placingObject.BaseProp.CanPlaceOnWall && instance.BaseProp.IsWall && result.HitData.Normal != BEPUutilities.Vector3.UnitZ)
                             {
-                                temp = instance.Position + MathConverter.Convert(result.HitData.Normal) * Math.Abs(Vector3.Dot(result.HitData.Normal, placingObject.CorrectedDimensions * placingObject.Scale));
+                                // sometimes boxes are just a tad misaligned due to rounding errors in the orientation calcs; round normal
+                                Vector3 normal = result.HitData.Normal;
+                                normal.X = (int)(normal.X + 0.5f * Math.Sign(normal.X));
+                                normal.Y = (int)(normal.Y + 0.5f * Math.Sign(normal.Y));
+                                normal.Z = (int)(normal.Z + 0.5f * Math.Sign(normal.Z));
+                                Vector3 dir = MathConverter.Convert(normal) * Math.Abs(Vector3.Dot(normal, placingObject.CorrectedDimensions * placingObject.Scale));
+                                temp = instance.Position + dir;
                                 if(EditableWorld.GridOpen(placingObject.CorrectedDimensions, placingObject.CorrectedScale, (int)temp.X, (int)temp.Y, (int)temp.Z))
                                 {
                                     currGridPos = temp;
@@ -275,7 +281,7 @@ namespace LD30
                                     if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
                                         placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                     validLocation = EditableWorld.HasSupport(placingObject.CorrectedDimensions, placingObject.CorrectedScale,
-                                        -result.HitData.Normal, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
+                                        normal * dir, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                     if(validLocation)
                                         break;
                                 }
