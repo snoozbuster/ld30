@@ -108,6 +108,8 @@ namespace LD30
             }
             
             Input.Update(gameTime, false);
+            if(GameManager.State == GameState.Paused_PadQuery)
+                GameManager.State = GameManager.PreviousState;
             MediaSystem.Update(gameTime, Program.Game.IsActive);
             
             if(Loading)

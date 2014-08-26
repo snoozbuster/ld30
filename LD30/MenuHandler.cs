@@ -400,10 +400,7 @@ namespace LD30
                 Vector2 stringLength = loader.BiggerFont.MeasureString("Press      to resume");
                 Vector2 screenSpot = new Vector2(RenderingDevice.Width * 0.5f, RenderingDevice.Height * 0.5f);
                 RenderingDevice.SpriteBatch.DrawString(loader.BiggerFont, "Press      to resume", screenSpot, Color.White, 0, stringLength * 0.5f, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
-                if(Input.ControlScheme == ControlScheme.Keyboard)
-                    SymbolWriter.WriteKeyboardIcon(Keys.Escape, screenSpot, new Vector2((stringLength.X * 0.5f + SymbolWriter.IconCenter.X * 0.5f * 0.81f - loader.BiggerFont.MeasureString("Press ").X), SymbolWriter.IconCenter.Y + 10), false);
-                else
-                    SymbolWriter.WriteXboxIcon(Buttons.Start, screenSpot, new Vector2((stringLength.X * 0.5f + SymbolWriter.IconCenter.X * 0.5f * 0.81f - loader.BiggerFont.MeasureString("Press ").X), SymbolWriter.IconCenter.Y + 10), false);
+                SymbolWriter.WriteKeyboardIcon(Keys.Escape, screenSpot, new Vector2((stringLength.X * 0.5f + SymbolWriter.IconCenter.X * 0.5f * 0.81f - loader.BiggerFont.MeasureString("Press ").X), SymbolWriter.IconCenter.Y + 10), false);
 
                 base.Draw(gameTime);
 
@@ -577,12 +574,8 @@ namespace LD30
                         if((controlArray[i].IsSelected == null || (controlArray[i].IsSelected.HasValue && controlArray[i].IsSelected.Value)) &&
                             paths[i] != null)
                         {
-                            if(Input.ControlScheme == ControlScheme.Keyboard)
-                                SymbolWriter.WriteKeyboardIcon(Keys.Back, new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
-                                    new Vector2(30, 22) * RenderingDevice.TextureScaleFactor, true);
-                            else
-                                SymbolWriter.WriteXboxIcon(Buttons.Back, new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
-                                    new Vector2(30, 22) * RenderingDevice.TextureScaleFactor, true);
+                            SymbolWriter.WriteKeyboardIcon(Keys.Back, new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
+                                new Vector2(30, 22) * RenderingDevice.TextureScaleFactor, true);
                             RenderingDevice.SpriteBatch.DrawString(loader.Font, "Delete World", new Vector2(controlArray[controlArray.Count - 1].Texture.UpperLeft.X, controlArray[controlArray.Count - 1].Texture.LowerRight.Y) +
                                     new Vector2(50, 5) * RenderingDevice.TextureScaleFactor, Color.Black, 0, Vector2.Zero, RenderingDevice.TextureScaleFactor, SpriteEffects.None, 0);
                         }
