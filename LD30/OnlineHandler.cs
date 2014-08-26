@@ -17,7 +17,8 @@ namespace LD30
             string filename = w.SaveToFile();
             using(WebClient client = new WebClient())
             {
-                client.UploadFile("http://accelerateddeliverygame.com/ld30temp/upload.php?name=" + w.OwnerName, filename);
+                byte[] response = client.UploadFile("http://accelerateddeliverygame.com/ld30temp/upload.php?name=" + w.OwnerName, filename);
+                string responseString = Encoding.ASCII.GetString(response);
             }
         }
 
