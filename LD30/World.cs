@@ -59,6 +59,7 @@ namespace LD30
         {
             WorldPosition = worldPos;
             OwnerName = paste.paste_title;
+            objects = new List<PropInstance>();
             string data = null;
             using(WebClient c = new WebClient())
                 data = c.DownloadString("http://pastebin.com/raw.php?i=" + paste.paste_key);
