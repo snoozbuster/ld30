@@ -359,6 +359,7 @@
       <Name>ld30</Name>
       <Importer>FbxImporter</Importer>
       <Processor>ModelProcessor</Processor>
+      <ProcessorParameters_RotationZ>180</ProcessorParameters_RotationZ>
     </Compile>
     <Compile Include="models\statues\lion.fbx">
       <Name>lion</Name>

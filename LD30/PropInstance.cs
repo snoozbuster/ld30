@@ -1,4 +1,5 @@
-﻿using BEPUphysics.Entities;
+﻿using BEPUphysics.CollisionRuleManagement;
+using BEPUphysics.Entities;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace LD30
         private float rotation;
         public Color Color { get; set; }
         public Entity Entity { get; private set; }
-        public bool Immobile { get; private set; }
+        public bool Immobile { get; set; }
 
         public Vector3 CorrectedDimensions { get { if(rotation == MathHelper.PiOver2 || rotation == 3 * MathHelper.PiOver2) return new Vector3(BaseProp.Dimensions.Y, BaseProp.Dimensions.X, BaseProp.Dimensions.Z); return BaseProp.Dimensions; } }
         public Vector3 CorrectedScale { get { if(rotation == MathHelper.PiOver2 || rotation == 3 * MathHelper.PiOver2) return new Vector3(Scale.Y, Scale.X, Scale.Z); return Scale; } }

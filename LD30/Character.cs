@@ -1,11 +1,13 @@
 ﻿using Accelerated_Delivery_Win;
 using BEPUphysics.BroadPhaseEntries;
 using BEPUphysics.BroadPhaseEntries.MobileCollidables;
+using BEPUphysics.CollisionRuleManagement;
 using BEPUphysics.Constraints.SingleEntity;
 using BEPUphysics.Constraints.TwoEntity.Motors;
 using BEPUphysics.Entities;
 using BEPUphysicsDemos.AlternateMovement.Character;
 using BEPUutilities;
+using ConversionHelper;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -52,21 +54,14 @@ namespace LD30
             {
                 Entity.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
                 Vector2 movementDir = Vector2.Zero;
-                if(Input.ControlScheme == ControlScheme.Keyboard)
-                {
-                    if(Input.KeyboardState.IsKeyDown(Keys.W) || Input.KeyboardState.IsKeyDown(Keys.Up))
-                        movementDir += new Vector2(1, 0);
-                    if(Input.KeyboardState.IsKeyDown(Keys.S) || Input.KeyboardState.IsKeyDown(Keys.Down))
-                        movementDir += new Vector2(-1, 0);
-                    if(Input.KeyboardState.IsKeyDown(Keys.A) || Input.KeyboardState.IsKeyDown(Keys.Left))
-                        movementDir += new Vector2(0, 1);
-                    if(Input.KeyboardState.IsKeyDown(Keys.D) || Input.KeyboardState.IsKeyDown(Keys.Right))
-                        movementDir += new Vector2(0, -1);
-                }
-                else
-                {
-                    movementDir = Input.CurrentPad.ThumbSticks.Left;
-                }
+                if(Input.KeyboardState.IsKeyDown(Keys.W) || Input.KeyboardState.IsKeyDown(Keys.Up))
+                    movementDir += new Vector2(1, 0);
+                if(Input.KeyboardState.IsKeyDown(Keys.S) || Input.KeyboardState.IsKeyDown(Keys.Down))
+                    movementDir += new Vector2(-1, 0);
+                if(Input.KeyboardState.IsKeyDown(Keys.A) || Input.KeyboardState.IsKeyDown(Keys.Left))
+                    movementDir += new Vector2(0, 1);
+                if(Input.KeyboardState.IsKeyDown(Keys.D) || Input.KeyboardState.IsKeyDown(Keys.Right))
+                    movementDir += new Vector2(0, -1);
                 if(movementDir != Vector2.Zero)
                 {
                     movementDir.Normalize();
@@ -74,6 +69,10 @@ namespace LD30
                     if(movementDir.Y < 0)
                         Angle = -Angle;
                 }
+#if DEBUG
+                if(Input.CheckKeyboardJustPressed(Keys.G))
+                    Entity.CharacterController.Body.IsAffectedByGravity = !Entity.CharacterController.Body.IsAffectedByGravity;
+#endif
             }
 
             Vector3 dir = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ) - Renderer.Camera.Position;
@@ -122,12 +121,25 @@ namespace LD30
             if(!DisplayingText)
                 return;
 
+            Vector3 projection = Renderer.GraphicsDevice.Viewport.Project(Entity.CharacterController.Body.Position + new Vector3(0, 0, Entity.CharacterController.Body.Height), 
+                MathConverter.Convert(Renderer.Camera.ProjectionMatrix),
+                MathConverter.Convert(Renderer.Camera.ViewMatrix),
+                MathConverter.Convert(Renderer.Camera.WorldMatrix));
+            float offset = 15;
+            Vector2 screenCoords = new Vector2(projection.X, projection.Y);
 
+            screenCoords.X += offset;
+            screenCoords.Y -= offset;
+
+            RenderingDevice.SpriteBatch.Begin();
+            RenderingDevice.SpriteBatch.DrawString(Program.Game.Loader.SmallerFont,
+                text, screenCoords, Microsoft.Xna.Framework.Color.Black);
+            RenderingDevice.SpriteBatch.End();
         }
 
         public void DisplayBridgeText(string w1, string w2)
         {
-            text = string.Format("Bridge between {0}'s world and {1}'s world", w1, w2);
+            text = string.Format("Bridge to {0}'s world", w2);
             DisplayingText = true;
         }
 

@@ -141,6 +141,7 @@ namespace LD30
                     }
                     else
                     {
+                        WorldGrid.Update(gameTime);
                         if(editor.IsOpen)
                             editor.Update(gameTime);
                         else if(Input.CheckMouseJustClicked(2))
@@ -195,7 +196,6 @@ namespace LD30
             Renderer.Draw();
             character.Draw(gameTime);
             editor.Draw(gameTime);
-            WorldGrid.Draw(camera);
         }
 
         public void Start(string path, bool created)
@@ -235,11 +235,11 @@ namespace LD30
             if(WorldGrid != null)
             {
                 WorldGrid.Host.SaveToFile();
-                //OnlineHandler.UploadWorld(WorldGrid.Host);
+                OnlineHandler.UploadWorld(WorldGrid.Host);
             }
             else if(lastOpenWorld != null)
             {
-                //OnlineHandler.UploadWorld(lastOpenWorld);
+                OnlineHandler.UploadWorld(lastOpenWorld);
             }
             base.OnExiting(sender, args);
         }

@@ -2,6 +2,7 @@
 using BEPUphysics.BroadPhaseEntries;
 using BEPUphysics.BroadPhaseEntries.MobileCollidables;
 using BEPUphysics.CollisionRuleManagement;
+using BEPUphysics.Entities;
 using BEPUphysics.NarrowPhaseSystems.Pairs;
 using ConversionHelper;
 using Microsoft.Xna.Framework;
@@ -75,7 +76,7 @@ namespace LD30
 
         private HelpfulTextBox text;
 
-        private const string placingHelpText = "R : Rotate object\nMouse wheel : Scale object\nClick : Place object\nRight click : Delete object\nH : Toggle help";
+        private const string placingHelpText = "R : Rotate object\nClick : Place object\nRight click : Delete object\nH : Toggle help";
         private bool showHelp = true;
         private Rectangle helpTextRect;
 
@@ -88,10 +89,7 @@ namespace LD30
 
             Texture2D ui = Program.Game.Loader.editorUI;
             Rectangle tabRect = new Rectangle(0, 0, 77, 23);
-            Rectangle scaleUpRect = new Rectangle(0, 23, 23, 35);
-            Rectangle scaleDownRect = new Rectangle(23, 23, 24, 36);
             Rectangle propRect = new Rectangle(77, 0, 61, 62);
-            Rectangle rotationRect = new Rectangle(77 + 61, 0, 62, 67);
             Rectangle colorRect = new Rectangle(77 + 62 + 61, 0, 33, 31);
             Rectangle backgroundRect = new Rectangle(0, 67, 465, 414);
 
@@ -123,7 +121,7 @@ namespace LD30
                     {
                         currentEffect.CurrentTechnique = currentEffect.Techniques[tech];
 
-                        currentEffect.Parameters["xColor"].SetValue(new Vector4(0.8f, 0.8f, 0.8f, 1));
+                        currentEffect.Parameters["xColor"].SetValue(new Vector4(0.7f, 0.7f, 0.7f, 1));
 
                         currentEffect.Parameters["xCamerasViewProjection"].SetValue(viewProj);
                         currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform * Matrix.CreateScale(2));// * Camera.World);
@@ -216,27 +214,27 @@ namespace LD30
                 if(Input.CheckKeyboardJustPressed(Microsoft.Xna.Framework.Input.Keys.R))
                 {
                     placingObject.RotationAngle = placingObject.RotationAngle + MathHelper.PiOver2;
-                    if(placingObject.RotationAngle >= MathHelper.Pi)
+                    if(placingObject.RotationAngle >= MathHelper.TwoPi)
                         placingObject.RotationAngle = 0;
                 }
-                if(Input.MouseState.ScrollWheelValue > Input.MouseLastFrame.ScrollWheelValue)
-                {
-                    Vector3 newScale = nextScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
-                    if(newScale != placingObject.Scale)
-                    {
-                        placingObject.Scale = newScale;
-                        setEntityProps();
-                    }
-                }
-                else if(Input.MouseState.ScrollWheelValue < Input.MouseLastFrame.ScrollWheelValue)
-                {
-                    Vector3 newScale = prevScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
-                    if(newScale != placingObject.Scale)
-                    {
-                        placingObject.Scale = newScale;
-                        setEntityProps();
-                    }
-                }
+                //if(Input.MouseState.ScrollWheelValue > Input.MouseLastFrame.ScrollWheelValue)
+                //{
+                //    Vector3 newScale = nextScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
+                //    if(newScale != placingObject.Scale)
+                //    {
+                //        placingObject.Scale = newScale;
+                //        setEntityProps();
+                //    }
+                //}
+                //else if(Input.MouseState.ScrollWheelValue < Input.MouseLastFrame.ScrollWheelValue)
+                //{
+                //    Vector3 newScale = prevScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
+                //    if(newScale != placingObject.Scale)
+                //    {
+                //        placingObject.Scale = newScale;
+                //        setEntityProps();
+                //    }
+                //}
 
                 Vector3 near = RenderingDevice.GraphicsDevice.Viewport.Unproject(new Vector3(Input.MouseState.X, Input.MouseState.Y, 0),
                     MathConverter.Convert(Renderer.Camera.ProjectionMatrix),
@@ -273,7 +271,9 @@ namespace LD30
                                 {
                                     currGridPos = temp;
                                     placingObject.Position = currGridPos;
-                                    placingObject.Entity.Position = placingObject.BaseProp.EntityCreator(currGridPos, placingObject.CorrectedScale).Position; // this is so wasteful
+                                    placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * 0.5f;
+                                    if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
+                                        placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                     validLocation = EditableWorld.HasSupport(placingObject.CorrectedDimensions, placingObject.CorrectedScale,
                                         -result.HitData.Normal, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                     if(validLocation)
@@ -284,7 +284,9 @@ namespace LD30
                             {
                                 currGridPos = instance.Position + Vector3.UnitZ;
                                 placingObject.Position = currGridPos;
-                                placingObject.Entity.Position = placingObject.BaseProp.EntityCreator(currGridPos, placingObject.CorrectedScale).Position; // this is so wasteful
+                                placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * 0.5f;
+                                if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
+                                    placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                 validLocation = placingObject.BaseProp.CanPlaceOnWall ? EditableWorld.GridOpen(placingObject.CorrectedDimensions, placingObject.CorrectedScale, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z) :
                                                                                         EditableWorld.ValidPosition(placingObject, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                 break;

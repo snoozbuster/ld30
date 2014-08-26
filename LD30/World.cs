@@ -1,6 +1,8 @@
 ﻿using Accelerated_Delivery_Win;
 using BEPUphysics;
 using BEPUphysics.BroadPhaseEntries.MobileCollidables;
+using BEPUphysics.CollisionShapes;
+using BEPUphysics.Entities.Prefabs;
 using BEPUutilities;
 using ConversionHelper;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,10 +24,11 @@ namespace LD30
         public List<PropInstance> Objects { get { return new List<PropInstance>(objects); } }
         private List<PropInstance> objects;
 
+        //private CompoundBody terrain;
+
         public Vector3 WorldPosition { get; private set; }
 
-        private Texture2D polygonTex;
-
+        public PropInstance[, ,] Grid { get { return grid; } }
         private PropInstance[, ,] grid = new PropInstance[MaxSideLength, MaxSideLength, MaxHeight];
 
         public World(string name, string data, Vector3 worldPos)
@@ -113,11 +116,14 @@ namespace LD30
             baseTerrainArray = mask(baseTerrainArray, size, r);
             baseTerrainArray = smooth(baseTerrainArray, size, 2);
 
-            for(int i = 0; i < World.MaxSideLength; i++)
-                for(int j = 0; j < World.MaxSideLength; j++)
-                    for(int z = 0; z < baseTerrainArray[i, j]; z++)
-                        AddObject(Prop.PropAssociations[0].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
-                            Vector3.One, 0, new Microsoft.Xna.Framework.Color((z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight)), true, this), i, j, z);
+            //beginCompounding();
+            for(int z = 0; z < World.MaxHeight; z++) // although it's slower to put this on the outside, it allows "grouping" of "layers", should it be needed
+                for(int i = 0; i < World.MaxSideLength; i++)
+                    for(int j = 0; j < World.MaxSideLength; j++)
+                        if(z < baseTerrainArray[i, j])
+                            AddObject(Prop.PropAssociations[0].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
+                                Vector3.One, 0, new Microsoft.Xna.Framework.Color((z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight)), true, this), i, j, z);
+            //terrain = endCompounding();
             for(int i = 0; i < World.MaxSideLength; i++)
                 for(int j = 0; j < World.MaxSideLength; j++)
                 {
@@ -146,11 +152,25 @@ namespace LD30
                 }
         }
 
+        //private bool compounding = false;
+        //private int firstNonCubeIndex = 0;
+        //private void beginCompounding()
+        //{
+        //    compounding = true;
+        //}
+
+        //private CompoundBody endCompounding()
+        //{
+        //    compounding = false;
+        //    firstNonCubeIndex = objects.Count + 1;
+        //    return new CompoundBody(objects.Select(i => new CompoundShapeEntry(i.Entity.CollisionInformation.Shape)).ToList()) { Tag = objects[0] };
+        //}
+
         public void AddObject(PropInstance instance, int i, int j, int z)
         {
             objects.Add(instance);
             fillGrid(instance, instance.CorrectedDimensions, instance.CorrectedScale, i, j, z);
-            if(Space != null)
+            if(Space != null)// && !compounding)
             {
                 Space.Add(instance.Entity);
                 Renderer.Add(instance);
@@ -285,15 +305,13 @@ namespace LD30
                 points[i].X = (int)(MathHelper.Clamp((int)(points[i].X + 0.5f), (-size+1) / 2, (size-2) / 2)); // round to indices
                 points[i].Y = (int)(MathHelper.Clamp((int)(points[i].Y + 0.5f), (-size+1) / 2, (size-2) / 2));
             }
-            RenderTarget2D target = new RenderTarget2D(RenderingDevice.GraphicsDevice, size, size);
-            RenderingDevice.GraphicsDevice.SetRenderTarget(target);
-            RenderingDevice.GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
-            RenderingDevice.SpriteBatch.Begin();
 
             Func<int, int, int> transform = (x, y) =>
             {
                 // we're inside the polygon if we can draw a line to any corner and get exactly 1 intersection
                 // 0 or 2 mean we're outside
+                // this function doesn't work perfectly; none of the points on y=x are "inside", and sometimes it
+                // misses points in the upper-right of the polygon
                 int intersections = 0;
                 Vector2 point = new Vector2(x - (size - 1) / 2, y - (size - 1) / 2);
                 Vector2 ul = new Vector2(-size + 1, -size + 1) - point;
@@ -330,7 +348,6 @@ namespace LD30
                 }
                 if(intersections == 1)
                 {
-                    RenderingDevice.SpriteBatch.Draw(Program.Game.Loader.EmptyTex, new Microsoft.Xna.Framework.Rectangle(x, y, 1, 1), Microsoft.Xna.Framework.Color.Green);
                     return baseTerrainArray[x, y]; // inside polygon
                 }
 
@@ -346,38 +363,13 @@ namespace LD30
                     }
                 }
                 smallestDistance = (float)Math.Sqrt(smallestDistance);
-                RenderingDevice.SpriteBatch.Draw(Program.Game.Loader.EmptyTex, new Microsoft.Xna.Framework.Rectangle(x, y, 1, 1), Microsoft.Xna.Framework.Color.Red);
                 return (int)MathHelper.Clamp(baseTerrainArray[x, y] + (int)(-Math.Pow(2, smallestDistance - 2)), 0, World.MaxHeight);
             };
-            polygonTex = (Texture2D)target;
             int[,] output = new int[size, size];
             for(int i = 0; i < size; i++)
                 for(int j = 0; j < size; j++)
                     output[i, j] = transform(i, j);
-            for(int i = 0; i < points.Length; i++)
-            {
-                Vector2 c = new Vector2(size / 2, size / 2);
-                Vector2 q = points[i];
-                Vector2 s = points[i + 1 == points.Length ? 0 : i + 1];
-                drawLine(q + c, s + c);
-            }
-            RenderingDevice.SpriteBatch.End();
-            RenderingDevice.GraphicsDevice.SetRenderTarget(null);
             return output;
-        }
-        
-        /// <summary>
-        /// used for debug polygon drawing
-        /// </summary>
-        /// <param name="point1"></param>
-        /// <param name="point2"></param>
-        protected void drawLine(Vector2 point1, Vector2 point2)
-        {
-            float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
-            float length = (point1 - point2).Length();
-
-            RenderingDevice.SpriteBatch.Draw(Program.Game.Loader.EmptyTex, point1, null, Microsoft.Xna.Framework.Color.Black,
-                       angle, Vector2.Zero, new Vector2(length, 1.5f), SpriteEffects.None, 0);
         }
 
         private int avgSquareValues(int i, int j, int stride, int[,] array)
@@ -443,20 +435,18 @@ namespace LD30
         private void createWorld(BinaryReader reader)
         {
             int num = reader.ReadInt32();
+            //beginCompounding();
             for(int i = 0; i < num; i++)
             {
                 var instance = reader.ReadPropInstance(this);
+                if(WorldPosition != Vector3.Zero)
+                    instance.Immobile = true;
+                //if(instance.BaseProp.ID != 0)
+                //{
+                //    firstNonCubeIndex--;
+                //    terrain = endCompounding();
+                //}
                 AddObject(instance, (int)instance.Position.X, (int)instance.Position.Y, (int)instance.Position.Z);
-            }
-        }
-
-        public void Draw()
-        {
-            if(polygonTex != null)
-            {
-                RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null);
-                RenderingDevice.SpriteBatch.Draw(polygonTex, new Microsoft.Xna.Framework.Rectangle(0, 0, 75, 75), Microsoft.Xna.Framework.Color.White);
-                RenderingDevice.SpriteBatch.End();
             }
         }
 
