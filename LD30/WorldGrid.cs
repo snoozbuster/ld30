@@ -184,6 +184,8 @@ namespace LD30
                     {
                         if(readyWorlds.Select(d => p.paste_title == d.OwnerName).Contains(true))
                             continue;
+                        if(usedPoints.Count == 5)
+                            return;
 
                         Vector3 worldPos;
                         int index;
@@ -205,8 +207,7 @@ namespace LD30
                     }
                 }
                 parsedPastes.AddRange(newPastes);
-                //Thread.Sleep(300000); // five minutes before we check again
-                Thread.Sleep(10000);
+                Thread.Sleep(300000); // five minutes before we check again
             }
         }
 
