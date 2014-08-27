@@ -317,7 +317,7 @@ namespace LD30
                 currentEffect.Parameters["xColor"].SetValue(prop.Color.ToVector4());
 
                 currentEffect.Parameters["xCamerasViewProjection"].SetValue(view * MathConverter.Convert(Camera.ProjectionMatrix));
-                currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform * (prop.Transparent ? Matrix.CreateScale(0.99f) : Matrix.Identity) * Matrix.CreateScale(prop.Scale) * entityWorld);// * Camera.World);
+                currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform * Matrix.CreateTranslation(-prop.InitialEntityTranslation) * (prop.Transparent ? Matrix.CreateScale(0.99f) : Matrix.Identity) * Matrix.CreateScale(prop.Scale) *  entityWorld);// * Camera.World);
                 currentEffect.Parameters["xLightPos"].SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 10));
                 currentEffect.Parameters["xLightPower"].SetValue(0.4f);
                 currentEffect.Parameters["xAmbient"].SetValue(0.7f);
