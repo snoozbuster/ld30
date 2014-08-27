@@ -153,10 +153,10 @@ namespace LD30
         /// <param name="collisionModel">Model to use for the collision shape.</param>
         /// <param name="vertices">Compiled set of vertices from the model.</param>
         /// <param name="indices">Compiled set of indices from the model.</param>
-        public static void GetVerticesAndIndicesFromModel(Model collisionModel, out BEPUutilities.Vector3[] vertices, out int[] indices)
+        public static void GetVerticesAndIndicesFromModel(Model collisionModel, Vector3 scale, out BEPUutilities.Vector3[] vertices, out int[] indices)
         {
             Vector3[] tempVertices;
-            GetVerticesAndIndicesFromModel(collisionModel, out tempVertices, out indices);
+            GetVerticesAndIndicesFromModel(collisionModel, scale, out tempVertices, out indices);
             vertices = MathConverter.Convert(tempVertices);
         }
 
@@ -166,7 +166,7 @@ namespace LD30
         /// <param name="collisionModel">Model to use for the collision shape.</param>
         /// <param name="vertices">Compiled set of vertices from the model.</param>
         /// <param name="indices">Compiled set of indices from the model.</param>
-        public static void GetVerticesAndIndicesFromModel(Model collisionModel, out Vector3[] vertices, out int[] indices)
+        public static void GetVerticesAndIndicesFromModel(Model collisionModel, Vector3 scale, out Vector3[] vertices, out int[] indices)
         {
             var verticesList = new List<Vector3>();
             var indicesList = new List<int>();
@@ -180,7 +180,7 @@ namespace LD30
                     transform = transforms[mesh.ParentBone.Index];
                 else
                     transform = Matrix.Identity;
-                AddMesh(mesh, transform, verticesList, indicesList);
+                AddMesh(mesh, transform, scale, verticesList, indicesList);
             }
 
             vertices = verticesList.ToArray();
@@ -196,7 +196,7 @@ namespace LD30
         /// <param name="transform">Transform to apply to the mesh.</param>
         /// <param name="vertices">List to receive vertices from the mesh.</param>
         /// <param name="indices">List to receive indices from the mesh.</param>
-        public static void AddMesh(ModelMesh collisionModelMesh, Matrix transform, List<Vector3> vertices, IList<int> indices)
+        public static void AddMesh(ModelMesh collisionModelMesh, Matrix transform, Vector3 scale, List<Vector3> vertices, IList<int> indices)
         {
             foreach (ModelMeshPart meshPart in collisionModelMesh.MeshParts)
             {
@@ -212,7 +212,9 @@ namespace LD30
                         stride);
 
                 //Transform it so its vertices are located in the model's space as opposed to mesh part space.
+                Matrix scaleMatrix = Matrix.CreateScale(scale);
                 Vector3.Transform(meshPartVertices, ref transform, meshPartVertices);
+                Vector3.Transform(meshPartVertices, ref scaleMatrix, meshPartVertices);
                 vertices.AddRange(meshPartVertices);
 
                 if (meshPart.IndexBuffer.IndexElementSize == IndexElementSize.ThirtyTwoBits)

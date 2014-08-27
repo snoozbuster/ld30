@@ -15,6 +15,7 @@ namespace LD30
         public readonly World ContainingWorld;
         public Vector3 Scale { get { return scale; } set { scale = value; if(Entity != null && Entity.Space != null) { var s = Entity.Space; s.Remove(Entity); Entity = BaseProp.EntityCreator(Position, value); Entity.Orientation = Rotation; Entity.Tag = Entity.CollisionInformation.Tag = this; s.Add(Entity); } } } // can't scale entities
         private Vector3 scale;
+        public Vector3 InitialEntityTranslation { get; private set; }
         public Vector3 Position { get; set; }
         public Quaternion Rotation { get; private set; }
         public float RotationAngle { get { return rotation; } set { rotation = value; Entity.Orientation = Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, rotation); } }
@@ -39,6 +40,8 @@ namespace LD30
             this.scale = scale;
             Position = position;
             Entity = entity;
+            if(Entity.Tag != null && Entity.Tag is BEPUutilities.Vector3)
+                InitialEntityTranslation = (BEPUutilities.Vector3)Entity.Tag;
             Entity.CollisionInformation.Tag = this;
             Entity.Tag = this;
             Entity.Orientation = Rotation;

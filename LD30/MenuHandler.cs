@@ -755,12 +755,10 @@ namespace LD30
         private class InstructionsMenu : Menu
         {
             private Texture2D instructions_PC;
-            private Texture2D instructions_Xbox;
 
             public InstructionsMenu()
             {
                 instructions_PC = loader.Instructions_PC;
-                instructions_Xbox = loader.Instructions_Xbox;
             }
 
             public override void Update(GameTime gameTime)
@@ -773,10 +771,7 @@ namespace LD30
             public override void Draw(GameTime gameTime)
             {
                 RenderingDevice.SpriteBatch.Begin();
-                if(Input.ControlScheme == ControlScheme.XboxController)
-                    RenderingDevice.SpriteBatch.Draw(instructions_Xbox, Vector2.Zero, Color.White);
-                else if(Input.ControlScheme == ControlScheme.Keyboard)
-                    RenderingDevice.SpriteBatch.Draw(instructions_PC, Vector2.Zero, Color.White);
+                RenderingDevice.SpriteBatch.Draw(instructions_PC, Vector2.Zero, Color.White);
                 RenderingDevice.SpriteBatch.End();
             }
         }

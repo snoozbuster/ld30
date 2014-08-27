@@ -124,11 +124,6 @@
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>
-    <Compile Include="gui\instructions_xbox.png">
-      <Name>instructions_xbox</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
     <Compile Include="gui\loading.png">
       <Name>loading</Name>
       <Importer>TextureImporter</Importer>

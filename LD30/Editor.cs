@@ -217,24 +217,24 @@ namespace LD30
                     if(placingObject.RotationAngle >= MathHelper.TwoPi)
                         placingObject.RotationAngle = 0;
                 }
-                //if(Input.MouseState.ScrollWheelValue > Input.MouseLastFrame.ScrollWheelValue)
-                //{
-                //    Vector3 newScale = nextScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
-                //    if(newScale != placingObject.Scale)
-                //    {
-                //        placingObject.Scale = newScale;
-                //        setEntityProps();
-                //    }
-                //}
-                //else if(Input.MouseState.ScrollWheelValue < Input.MouseLastFrame.ScrollWheelValue)
-                //{
-                //    Vector3 newScale = prevScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
-                //    if(newScale != placingObject.Scale)
-                //    {
-                //        placingObject.Scale = newScale;
-                //        setEntityProps();
-                //    }
-                //}
+                if(Input.MouseState.ScrollWheelValue > Input.MouseLastFrame.ScrollWheelValue)
+                {
+                    Vector3 newScale = nextScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
+                    if(newScale != placingObject.Scale)
+                    {
+                        placingObject.Scale = newScale;
+                        setEntityProps();
+                    }
+                }
+                else if(Input.MouseState.ScrollWheelValue < Input.MouseLastFrame.ScrollWheelValue)
+                {
+                    Vector3 newScale = prevScale(placingObject.BaseProp.Dimensions, ref currentScaleFactor);
+                    if(newScale != placingObject.Scale)
+                    {
+                        placingObject.Scale = newScale;
+                        setEntityProps();
+                    }
+                }
 
                 Vector3 near = RenderingDevice.GraphicsDevice.Viewport.Unproject(new Vector3(Input.MouseState.X, Input.MouseState.Y, 0),
                     MathConverter.Convert(Renderer.Camera.ProjectionMatrix),
@@ -276,10 +276,10 @@ namespace LD30
                                 if(EditableWorld.GridOpen(placingObject.CorrectedDimensions, placingObject.CorrectedScale, (int)temp.X, (int)temp.Y, (int)temp.Z))
                                 {
                                     currGridPos = temp;
-                                    placingObject.Position = currGridPos;
-                                    placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * 0.5f;
+                                    placingObject.Position = currGridPos - (placingObject.Scale - Vector3.One);
+                                    placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * placingObject.CorrectedScale * 0.5f + placingObject.InitialEntityTranslation * placingObject.Scale;
                                     if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
-                                        placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
+                                        placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z * placingObject.CorrectedScale.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                     validLocation = EditableWorld.HasSupport(placingObject.CorrectedDimensions, placingObject.CorrectedScale,
                                         normal * dir, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                     if(validLocation)
@@ -290,9 +290,9 @@ namespace LD30
                             {
                                 currGridPos = instance.Position + Vector3.UnitZ;
                                 placingObject.Position = currGridPos;
-                                placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * 0.5f;
+                                placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * placingObject.CorrectedScale * 0.5f + placingObject.InitialEntityTranslation * placingObject.Scale;
                                 if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
-                                    placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
+                                    placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z * placingObject.CorrectedScale.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                 validLocation = placingObject.BaseProp.CanPlaceOnWall ? EditableWorld.GridOpen(placingObject.CorrectedDimensions, placingObject.CorrectedScale, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z) :
                                                                                         EditableWorld.ValidPosition(placingObject, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                 break;
@@ -433,6 +433,7 @@ namespace LD30
             placingObject = i;
             placingObject.Transparent = true;
             placingObject.Alpha = 0.3f;
+            currentScaleFactor = (placingObject.Scale.X + placingObject.Scale.Y + placingObject.Scale.Z) / 3; // this would be miserable if we ever did non-uniform scaling
             // generate collision detection, but do not collide
             setEntityProps();
             EditableWorld.Space.Add(i.Entity);
@@ -462,12 +463,12 @@ namespace LD30
                 if(temp.X / (int)temp.X == 1 && temp.Y / (int)temp.Y == 1 && temp.Z / (int)temp.Z == 1)
                 {
                     currentScaleFactor = tempScaleFactor;
-                    tempScaleFactor = 5.01f;
+                    tempScaleFactor = 3.01f;
                 }
                 else
                     tempScaleFactor += 0.25f;
-            } while(tempScaleFactor <= 5);
-            return dim * currentScaleFactor;
+            } while(tempScaleFactor <= 3);
+            return Vector3.One * currentScaleFactor;
         }
 
         private Vector3 prevScale(Vector3 dim, ref float currentScaleFactor)
@@ -479,13 +480,12 @@ namespace LD30
                 if(temp.X / (int)temp.X == 1 && temp.Y / (int)temp.Y == 1 && temp.Z / (int)temp.Z == 1)
                 {
                     currentScaleFactor = tempScaleFactor;
-                    return dim * currentScaleFactor;
+                    return Vector3.One * currentScaleFactor;
                 }
                 else
                     tempScaleFactor -= 0.25f;
-            } while(tempScaleFactor >= 1);
-            currentScaleFactor = 1;
-            return dim * currentScaleFactor;
+            } while(tempScaleFactor >= 0);
+            return Vector3.One * currentScaleFactor;
         }
 
         private void setEntityProps()
@@ -522,7 +522,7 @@ namespace LD30
         private void getRenderData(out Matrix world, out Color color, out float transparency)
         {
             // extra scale term to prevent clipping when aligned on edges
-            world = Matrix.CreateScale(0.99f) * Matrix.CreateScale(placingObject.BaseProp.Dimensions) * Matrix.CreateScale(placingObject.Scale) * MathConverter.Convert(placingObject.Entity.WorldTransform);
+            world = Matrix.CreateScale(0.99f) * Matrix.CreateScale(placingObject.BaseProp.Dimensions) * Matrix.CreateScale(currentScaleFactor) * MathConverter.Convert(placingObject.Entity.WorldTransform);
             color = validLocation && !collidingWithCharacter ? Color.Green : Color.Red;
             transparency = 0.5f;
             color *= transparency;
