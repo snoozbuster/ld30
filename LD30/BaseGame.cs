@@ -235,14 +235,9 @@ namespace LD30
         protected override void OnExiting(object sender, EventArgs args)
         {
             if(WorldGrid != null)
-            {
-                WorldGrid.Host.SaveToFile();
-                OnlineHandler.UploadWorld(WorldGrid.Host);
-            }
+                OnlineHandler.UploadWorld(WorldGrid.Host); // part of UploadWorld() is an implicit call to SaveToFile()
             else if(lastOpenWorld != null)
-            {
                 OnlineHandler.UploadWorld(lastOpenWorld);
-            }
             base.OnExiting(sender, args);
         }
         

@@ -51,7 +51,7 @@ namespace BEPUphysicsDemos.AlternateMovement.Character
         /// <param name="game">The running game.</param>
         public CharacterControllerInput(Space owningSpace, Camera camera, BaseGame game)
         {
-            CharacterController = new CharacterController(new Vector3(World.MaxSideLength / 2, World.MaxSideLength / 2, 5), 2.7f, 2, .4f, 5);
+            CharacterController = new CharacterController(new Vector3(World.MaxSideLength / 2, World.MaxSideLength / 2, 5), 2.7f, 2, .4f, 15);
             Camera = camera;
             CameraControlScheme = new CharacterCameraControlScheme(CharacterController, camera, game);
             Space = owningSpace;
@@ -133,7 +133,7 @@ namespace BEPUphysicsDemos.AlternateMovement.Character
                         CharacterController.Jump();
                     }
                 }
-                CharacterController.ViewDirection = Camera.WorldMatrix.Forward;
+                CharacterController.ViewDirection = -Camera.ViewMatrix.Forward;
             }
         }
 
