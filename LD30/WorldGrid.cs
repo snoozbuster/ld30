@@ -184,14 +184,15 @@ namespace LD30
                     {
                         if(readyWorlds.Select(d => p.paste_title == d.OwnerName).Contains(true))
                             continue;
-                        if(usedPoints.Count == 5)
-                            return;
 
                         Vector3 worldPos;
                         int index;
                         // sometimes include a local world
                         if(localWorlds.Count > 0 && r.Next(0, 4) == 0)
                             readyLocalWorld();
+
+                        if(usedPoints.Count == 5)
+                            return;
 
                         do
                         {
