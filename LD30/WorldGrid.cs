@@ -193,6 +193,10 @@ namespace LD30
                         if(localWorlds.Count > 0 && r.Next(0, 4) == 0)
                             readyLocalWorld();
 
+                        // this has to be before and after readyLocalWorlds()
+                        if(usedPoints.Count == 5)
+                            return;
+
                         do
                         {
                             Vector3 dir = randDir();
