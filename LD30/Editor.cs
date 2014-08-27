@@ -522,7 +522,7 @@ namespace LD30
         private void getRenderData(out Matrix world, out Color color, out float transparency)
         {
             // extra scale term to prevent clipping when aligned on edges
-            world = Matrix.CreateScale(0.99f) * Matrix.CreateScale(placingObject.BaseProp.Dimensions) * Matrix.CreateScale(placingObject.Scale) * MathConverter.Convert(placingObject.Entity.WorldTransform);
+            world = Matrix.CreateScale(0.99f) * Matrix.CreateScale(placingObject.BaseProp.Dimensions) * Matrix.CreateTranslation(-placingObject.InitialEntityTranslation) * Matrix.CreateScale(currentScaleFactor) * MathConverter.Convert(placingObject.Entity.WorldTransform);
             color = validLocation && !collidingWithCharacter ? Color.Green : Color.Red;
             transparency = 0.5f;
             color *= transparency;

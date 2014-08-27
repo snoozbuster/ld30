@@ -2,6 +2,7 @@
 using BEPUphysics.CollisionShapes;
 using BEPUphysics.Entities;
 using BEPUphysics.Entities.Prefabs;
+using ConversionHelper;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -125,16 +126,16 @@ namespace LD30
                 (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(0.5f) * s, s.X * 0.98f, s.Y * 0.98f, s.Z * 0.98f))); // make the cubes a little smaller to go easy on the physics engine
             yield return progress();
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/incline"), new Vector3(2, 2, 1), false, false, false, true, "Stairs", "NOW you're going places.",
-                (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/incline"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Counterclockwise); e.Position = p + new Vector3(1, 1, 0.5f); return e; }));
+                (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/incline"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Counterclockwise); e.Tag = e.Position; e.Position += MathConverter.Convert(p + new Vector3(1, 1, 0.5f)); return e; }));
             yield return progress();
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/inclinecorner"), new Vector3(2, 2, 1), false, false, false, true, "Corner Stairs", "For those hard-to-reach spots.",
-                (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/inclinecorner"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Solid); e.Position = p + new Vector3(1, 1, 0.5f); return e; }));
+                (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/inclinecorner"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Solid); e.Tag = e.Position; e.Position += MathConverter.Convert(p + new Vector3(1, 1, 0.5f)); return e; }));
             yield return progress();
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/littlebridge"), new Vector3(3, 1, 1), false, true, true, false, "Bridge", "Somewhat more stylish than cubes.",
                 (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(1.5f, 0.5f, 0.5f) * s, s.X * 3, s.Y, s.Z)));
             yield return progress();
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/pyramid"), new Vector3(2, 2, 1), false, false, false, true, "Pyramid", "I can't fathom what this would be useful for.",
-                (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/pyramid"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Counterclockwise); e.Position = p + new Vector3(1, 1, 0.5f); return e; }));
+                (p, s) => { BEPUutilities.Vector3[] v; int[] i; ModelDataExtractor.GetVerticesAndIndicesFromModel(content.Load<Model>("models/general/pyramid"), out v, out i); Entity e = new MobileMesh(v, i, BEPUutilities.AffineTransform.Identity, MobileMeshSolidity.Counterclockwise); e.Tag = e.Position; e.Position += MathConverter.Convert(p + new Vector3(1, 1, 0.5f)); return e; }));
             yield return progress();
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/sphere"), new Vector3(2, 2, 2), false, false, false, true, "Sphere", "The roundest of them all.",
                 (p, s) => new BEPUphysics.Entities.Prefabs.Sphere(p + new Vector3(1, 1, 1) * s, (s.X + s.Y + s.Z) / 3)));
