@@ -191,6 +191,10 @@ namespace LD30
                         if(localWorlds.Count > 0 && r.Next(0, 4) == 0)
                             readyLocalWorld();
 
+<<<<<<< HEAD
+=======
+                        // this has to be before and after readyLocalWorlds()
+>>>>>>> master
                         if(usedPoints.Count == 5)
                             return;
 
