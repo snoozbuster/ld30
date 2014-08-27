@@ -119,7 +119,10 @@ namespace BEPUphysicsDemos.AlternateMovement.Character
                     if(totalMovement == Vector2.Zero)
                         CharacterController.HorizontalMotionConstraint.MovementDirection = Vector2.Zero;
                     else
-                        CharacterController.HorizontalMotionConstraint.MovementDirection = Vector2.Normalize(totalMovement);
+                    {
+                        Vector3 v = Microsoft.Xna.Framework.Vector3.Transform(new Vector3(Vector2.Normalize(totalMovement), 0), Camera.Rotation);
+                        CharacterController.HorizontalMotionConstraint.MovementDirection = new Vector2(v.X, v.Y);
+                    }
 
                     CharacterController.StanceManager.DesiredStance = Stance.Standing;
                     //CharacterController.StanceManager.DesiredStance = Input.KeyboardState.IsKeyDown(Keys.LeftShift) ? Stance.Crouching : Stance.Standing;

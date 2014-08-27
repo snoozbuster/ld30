@@ -64,6 +64,8 @@ namespace LD30
                     movementDir += new Vector2(0, -1);
                 if(movementDir != Vector2.Zero)
                 {
+                    Vector3 v = Microsoft.Xna.Framework.Vector3.Transform(new Vector3(Vector2.Normalize(movementDir), 0), Entity.Camera.Rotation);
+                    movementDir = new Vector2(v.X, v.Y);
                     movementDir.Normalize();
                     Angle = (float)Math.Acos(movementDir.X);
                     if(movementDir.Y < 0)

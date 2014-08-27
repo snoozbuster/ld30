@@ -22,6 +22,10 @@ namespace LD30
 
         public Character Character { get; set; }
 
+        public Quaternion Rotation { get; private set; }
+
+        private float rotation;
+
 #if DEBUG
         public bool Debug { get; private set; }
 #endif 
@@ -29,6 +33,7 @@ namespace LD30
         public Camera(BaseGame g, Character tracking)
         {
             Offset = new Vector3(-10, -10, 10);
+            Rotation = Quaternion.Identity;
             //Character = tracking;
             //Position = Character.Entity.CharacterController.Body.Position + new Vector3(-10, -10, 10);
             ProjectionMatrix = MathConverter.Convert(Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, g.GraphicsDevice.Viewport.AspectRatio, .1f, 10000));
@@ -46,9 +51,15 @@ namespace LD30
 #if DEBUG
             if(Input.CheckKeyboardJustPressed(Microsoft.Xna.Framework.Input.Keys.I))
                 Debug = !Debug;
-            if(Debug && Input.CheckKeyboardJustPressed(Microsoft.Xna.Framework.Input.Keys.K))
-                Offset = Microsoft.Xna.Framework.Vector3.Transform(Offset, Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathHelper.PiOver2));
 #endif
+            if(Input.CheckKeyboardJustPressed(Microsoft.Xna.Framework.Input.Keys.E))
+            {
+                rotation += MathHelper.PiOver2;
+                if(rotation >= MathHelper.TwoPi)
+                    rotation = 0;
+                Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, rotation);
+                Offset = Microsoft.Xna.Framework.Vector3.Transform(new Vector3(-10, -10, 10), Rotation);
+            }
         }
     }
 }
