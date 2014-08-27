@@ -23,6 +23,7 @@ namespace LD30
         private Queue<World> readyWorlds = new Queue<World>();
         private Queue<int> linkedWorlds = new Queue<int>();
         private object queueLock = new object();
+        private int removedWorlds = 0;
 
         public World Host { get { return connectedWorlds[0]; } }
         public World[] Worlds { get { return connectedWorlds.ToArray(); } }
@@ -76,9 +77,6 @@ namespace LD30
         /// </summary>
         public void TryAddWorld()
         {
-            if(connectedWorlds.Count == 5)
-                return;
-
             World newWorld = null;
             int index = 0;
             if(!Monitor.TryEnter(queueLock, TimeSpan.FromSeconds(1))) // this is on the main thread, we do not want to block for long
@@ -100,7 +98,7 @@ namespace LD30
             if(newWorld != null)
             {
                 bool success;
-                PropInstance bridge = makeBridge(connectedWorlds[index], newWorld, out success);
+                PropInstance bridge = makeBridge(connectedWorlds[index - removedWorlds], newWorld, out success);
                 if(success)
                 {
                     connectedWorlds.Add(newWorld);
@@ -119,6 +117,7 @@ namespace LD30
                 }
                 else
                 {
+                    removedWorlds++;
                     //// try to put it back
                     //if(!Monitor.TryEnter(queueLock, TimeSpan.FromSeconds(1))) // this is on the main thread, we do not want to block for long
                     //{
@@ -154,15 +153,15 @@ namespace LD30
             Action readyLocalWorld = () => {
                 Vector3 worldPos;
                 int index;
-                string filename = localWorlds.Dequeue();
                 do
                 {
                     Vector3 dir = randDir();
-                    index = 0;// r.Next(0, connectedWorlds.Count);
-                    worldPos = connectedWorlds[index].WorldPosition + dir * (World.MaxSideLength + 10);
+                    index = r.Next(0, connectedWorlds.Count + readyWorlds.Count);
+                    worldPos = (index >= connectedWorlds.Count ? readyWorlds.ElementAt(index - connectedWorlds.Count) : connectedWorlds[index]).WorldPosition + dir * (World.MaxSideLength + 10);
                 } while(usedPoints.Contains(worldPos));
                 usedPoints.Add(worldPos);
 
+                string filename = localWorlds.Dequeue();
                 if(File.Exists(filename))
                 {
                     readyWorlds.Enqueue(new World(Path.GetFileNameWithoutExtension(filename), File.ReadAllText(filename), worldPos));
@@ -182,11 +181,10 @@ namespace LD30
                         readyLocalWorld();
                     else foreach(paste p in newPastes)
                     {
-                        if(readyWorlds.Select(d => p.paste_title == d.OwnerName).Contains(true))
+                        if(readyWorlds.Select(d => p.paste_title == d.OwnerName).Contains(true) || 
+                            localWorlds.Select(d => p.paste_title == Path.GetFileNameWithoutExtension(d)).Contains(true) ||
+                            connectedWorlds[0].OwnerName == p.paste_title) // prevent your own world(s) from being added, as well as previously added worlds
                             continue;
-
-                        if(usedPoints.Count == 5)
-                            return;
 
                         Vector3 worldPos;
                         int index;
@@ -194,14 +192,11 @@ namespace LD30
                         if(localWorlds.Count > 0 && r.Next(0, 4) == 0)
                             readyLocalWorld();
 
-                        if(usedPoints.Count == 5)
-                            return;
-
                         do
                         {
                             Vector3 dir = randDir();
-                            index = 0; //r.Next(0, connectedWorlds.Count);
-                            worldPos = connectedWorlds[index].WorldPosition + dir * (World.MaxSideLength + 10);
+                            index = r.Next(0, connectedWorlds.Count + readyWorlds.Count);
+                            worldPos = (index >= connectedWorlds.Count ? readyWorlds.ElementAt(index - connectedWorlds.Count) : connectedWorlds[index]).WorldPosition + dir * (World.MaxSideLength + 10);
                         } while(usedPoints.Contains(worldPos));
                         usedPoints.Add(worldPos);
 
@@ -263,12 +258,12 @@ namespace LD30
                             // found! convert to world pos (unlike most props, the bridge uses world coords, not grid coords)
                             // it turns out this process is way easier than I expected
                             success = true;
-                            pos = new Vector3(x - 5 * Math.Abs(dir.X), y - 5 * Math.Abs(dir.Y), z - 0.1f);
+                            pos = new Vector3(x - 5 * Math.Abs(dir.X), y - 5 * Math.Abs(dir.Y), z - 0.1f) - w1.WorldPosition;
                             break;
                         }
                         // one step back, two steps forward
-                        offset = -offset;
-                        offset += Math.Sign(offset);
+                        //offset = -offset;
+                        //offset += Math.Sign(offset);
                     }
             if(!success)
                 return null;

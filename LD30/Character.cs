@@ -141,7 +141,7 @@ namespace LD30
 
         public void DisplayBridgeText(string w1, string w2)
         {
-            text = string.Format("Bridge to {0}'s world", w2);
+            text = string.Format("Bridge from {0}'s world to {1}'s world", w1, w2);
             DisplayingText = true;
         }
 
