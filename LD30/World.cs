@@ -214,11 +214,6 @@ namespace LD30
 
         public bool HasSupport(Vector3 dim, Vector3 scale, Vector3 dir, int i, int j, int z)
         {
-            if(i + scale.X * dim.X > World.MaxSideLength || j + dim.Y * scale.Y > World.MaxSideLength || z + dim.Z * scale.Z > World.MaxHeight)
-                return false;
-            if(i < 0 || j < 0 || z < 0)
-                return false;
-
             try
             {
                 // this loop uses the contents of dir to dynamically "select" two loops to run.

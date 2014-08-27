@@ -159,7 +159,7 @@ namespace LD30
                 {
                     Vector3 dir = randDir();
                     index = 0;// r.Next(0, connectedWorlds.Count);
-                    worldPos = connectedWorlds[index].WorldPosition + dir * (World.MaxSideLength + 8);
+                    worldPos = connectedWorlds[index].WorldPosition + dir * (World.MaxSideLength + 10);
                 } while(usedPoints.Contains(worldPos));
                 usedPoints.Add(worldPos);
 
@@ -185,16 +185,15 @@ namespace LD30
                         if(readyWorlds.Select(d => p.paste_title == d.OwnerName).Contains(true))
                             continue;
 
+                        if(usedPoints.Count == 5)
+                            return;
+
                         Vector3 worldPos;
                         int index;
                         // sometimes include a local world
                         if(localWorlds.Count > 0 && r.Next(0, 4) == 0)
                             readyLocalWorld();
 
-<<<<<<< HEAD
-=======
-                        // this has to be before and after readyLocalWorlds()
->>>>>>> master
                         if(usedPoints.Count == 5)
                             return;
 
@@ -202,7 +201,7 @@ namespace LD30
                         {
                             Vector3 dir = randDir();
                             index = 0; //r.Next(0, connectedWorlds.Count);
-                            worldPos = connectedWorlds[index].WorldPosition + dir * (World.MaxSideLength + 8);
+                            worldPos = connectedWorlds[index].WorldPosition + dir * (World.MaxSideLength + 10);
                         } while(usedPoints.Contains(worldPos));
                         usedPoints.Add(worldPos);
 
@@ -239,9 +238,13 @@ namespace LD30
             success = false;
             World baseWorld = dir.X > 0 || dir.Y > 0 ? w2 : w1;
             World otherWorld = baseWorld == w1 ? w2 : w1;
-            for(int z = 0; z < 3 && !success; z++)
-                for(int x = (int)baseWorld.WorldPosition.X; x < (int)baseWorld.WorldPosition.X + (int)Math.Abs(dir.X) * 4 + (int)Math.Abs(dir.Y) * World.MaxSideLength && !success; x++)
-                    for(int y = (int)baseWorld.WorldPosition.Y; y < (int)baseWorld.WorldPosition.Y + (int)Math.Abs(dir.Y) * 4 + (int)Math.Abs(dir.X) * World.MaxSideLength; y++)
+            // start at the center, move backwards a square, than forwards two squares, and so on
+            // to keep the bridge as near to the center as possible; also, start with z near the upper limit
+            // to keep the bridge as high as possible
+            int offset = 1;
+            for(int z = 2; z >= 0 && !success; z--)
+                for(int x = (int)baseWorld.WorldPosition.X + (int)Math.Abs(dir.Y) * (World.MaxSideLength / 2 - 2); x < (int)baseWorld.WorldPosition.X + (int)Math.Abs(dir.X) + (int)Math.Abs(dir.Y) * World.MaxSideLength && !success; x += dir.Y != 0 ? offset : 1)
+                    for(int y = (int)baseWorld.WorldPosition.Y + (int)Math.Abs(dir.X) * (World.MaxSideLength / 2 - 2); y < (int)baseWorld.WorldPosition.Y + (int)Math.Abs(dir.Y) + (int)Math.Abs(dir.X) * World.MaxSideLength; y += dir.X != 0 ? offset : 1)
                     {
                         // x, y in world coordinates near baseWorld; convert to grid coordinates for baseWorld
                         // baseWorld is chosen to make this easy
@@ -250,20 +253,22 @@ namespace LD30
                         baseWorldgridY = y - (int)baseWorld.WorldPosition.Y;
                         // convert to grid coordinates for other world, keeping in mind the bridge is 10 units
                         int otherWorldGridX, otherWorldGridY;
-                        otherWorldGridX = x - (int)Math.Abs(dir.X) * 15 - (int)otherWorld.WorldPosition.X;
-                        otherWorldGridY = y - (int)Math.Abs(dir.Y) * 15 - (int)otherWorld.WorldPosition.Y;
+                        otherWorldGridX = x - (int)Math.Abs(dir.X) * 10 - (int)otherWorld.WorldPosition.X;
+                        otherWorldGridY = y - (int)Math.Abs(dir.Y) * 10 - (int)otherWorld.WorldPosition.Y;
 
                         // check for support only using the top two (bridge edge is 2x2, but skip the lower half)
-                        if(baseWorld.HasSupport(new Vector3(1 + Math.Abs(dir.Y), 1 + Math.Abs(dir.X), 1), Vector3.One, dir, baseWorldgridX, baseWorldgridY, z) &&
-                           otherWorld.HasSupport(new Vector3(1 + Math.Abs(dir.Y), 1 + Math.Abs(dir.X), 1), Vector3.One, -dir, otherWorldGridX, otherWorldGridY, z))
+                        if(baseWorld.HasSupport(new Vector3(1 + Math.Abs(dir.Y), 1 + Math.Abs(dir.X), 1), Vector3.One, dir.Abs(), baseWorldgridX, baseWorldgridY, z) &&
+                           otherWorld.HasSupport(new Vector3(1 + Math.Abs(dir.Y), 1 + Math.Abs(dir.X), 1), Vector3.One, -dir.Abs(), otherWorldGridX, otherWorldGridY, z))
                         {
                             // found! convert to world pos (unlike most props, the bridge uses world coords, not grid coords)
-                            // although these numbers are based in math they are also largely arbitrary
+                            // it turns out this process is way easier than I expected
                             success = true;
-                            pos = new Vector3(x - 5 * Math.Abs(dir.X) + Math.Abs(dir.Y - 1) - (dir.X < 0 ? 2 : 0), y - 5 * Math.Abs(dir.Y) + Math.Abs(dir.X - 1) - (dir.Y < 0 ? 2 : 0), z - 0.1f);
+                            pos = new Vector3(x - 5 * Math.Abs(dir.X), y - 5 * Math.Abs(dir.Y), z - 0.1f);
                             break;
                         }
-
+                        // one step back, two steps forward
+                        offset = -offset;
+                        offset += Math.Sign(offset);
                     }
             if(!success)
                 return null;
