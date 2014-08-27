@@ -218,7 +218,7 @@ namespace LD30
                 (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(0.5f, 0.5f, 1) * s - Vector3.UnitZ * (2 - 1.7f) * 0.5f, s.X * 0.9f, s.Y * 0.5f, s.Z * 1.7f)));
             yield return progress();
             StatueCategory.Add(new Prop(content.Load<Model>("models/statues/travesty"), new Vector3(1, 1, 2), false, false, false, true, "Flat Man", "Give him a sword and he'll be set!",
-                (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(0.5f, 0.5f, 1) * s - Vector3.UnitZ * (1 - 1.55f) * 0.5f, s.X * 0.9f, s.Y * 0.9f, s.Z * 1.55f)));
+                (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(0.5f, 0.5f, 1) * s - Vector3.UnitZ * (2 - 1.55f) * 0.5f, s.X * 0.9f, s.Y * 0.9f, s.Z * 1.55f)));
             yield return progress();
             StatueCategory.Add(new Prop(content.Load<Model>("models/statues/wip"), new Vector3(1, 1, 1), false, false, false, true, "Anvil", "They say this particular anvil floats.",
                 (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(0.5f) * s - Vector3.UnitZ * (1 - 0.5f) * 0.5f, s.X * 0.9f, s.Y * 0.9f, s.Z * 0.5f)));
