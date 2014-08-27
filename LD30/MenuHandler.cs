@@ -511,14 +511,17 @@ namespace LD30
                 protected bool deleteMenu = false;
                 private ConfirmationMenu confirmMenu;
                 public static bool Finished { get; protected set; }
-                string[] paths;
+                private string[] paths;
 
                 public WorldSelectMenu(Loader l)
                 {
                     float x = (640 - (rectWidth / 2f)) * RenderingDevice.TextureScaleFactor.X;
                     float y = 105 * RenderingDevice.TextureScaleFactor.Y - (rectHeight * RenderingDevice.TextureScaleFactor.Y) / 2f;
                     int i = 0;
-                    GetPaths();
+                    string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
+                    paths = new string[5];
+                    for(int j = 0; j < 5; j++)
+                        paths[j] = j < files.Length ? files[j] : null;
                     WorldSlotButton b1 = new WorldSlotButton(paths[i], new Sprite(delegate { return l.worldSelectButton; }, new Vector2(x, y + i++ * ((rectHeight + 5) * RenderingDevice.TextureScaleFactor.Y)), null, Sprite.RenderPoint.UpLeft));
                     WorldSlotButton b2 = new WorldSlotButton(paths[i], new Sprite(delegate { return l.worldSelectButton; }, new Vector2(x, y + i++ * ((rectHeight + 5) * RenderingDevice.TextureScaleFactor.Y)), null, Sprite.RenderPoint.UpLeft));
                     WorldSlotButton b3 = new WorldSlotButton(paths[i], new Sprite(delegate { return l.worldSelectButton; }, new Vector2(x, y + i++ * ((rectHeight + 5) * RenderingDevice.TextureScaleFactor.Y)), null, Sprite.RenderPoint.UpLeft));
@@ -547,12 +550,10 @@ namespace LD30
                         });
                 }
 
-                public void GetPaths()
+                public void UpdatePaths()
                 {
-                    string[] files = Directory.GetFiles(Program.SavePath, "*.wld", SearchOption.TopDirectoryOnly);
-                    paths = new string[5];
-                    for(int j = 0; j < 5; j++)
-                        paths[j] = j < files.Length ? files[j] : null;
+                    for(int i = 0; i < paths.Length; i++)
+                        paths[i] = (controlArray[i] as WorldSlotButton).Path;
                 }
 
                 public void Reset()
@@ -564,7 +565,7 @@ namespace LD30
                     deleteMenu = false;
                     confirmMenu.Reset();
 
-                    GetPaths();
+                    UpdatePaths();
                 }
 
                 public override void Draw(GameTime gameTime)
@@ -623,7 +624,7 @@ namespace LD30
                         : base(tex, String.Empty, null)
                     {
                         Path = path;
-                        OnSelect = delegate { bool created; string s = showDialog(out created); if(s != "") { Program.Game.Start(s, created); Finished = true; } };
+                        OnSelect = delegate { bool created; string s = showDialog(out created); if(s != "" && s != null) { Program.Game.Start(s, created); Finished = true; } };
                     }
 
                     public override void Draw(MenuControl selected)
