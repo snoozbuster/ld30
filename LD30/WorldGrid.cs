@@ -205,8 +205,15 @@ namespace LD30
                         } while(usedPoints.Contains(worldPos));
                         usedPoints.Add(worldPos);
 
-                        World w = new World(p, worldPos);
-                        readyWorlds.Enqueue(w);
+                        // world creation from a paste can rarely throw exceptions like 502 bad gateway,
+                        // so catch them and retry
+                        int retryCount = 10;
+                        World w = null;
+                        while(w == null && retryCount-- > 0)
+                            try { w = new World(p, worldPos); }
+                            catch { w = null; }
+                        if(w != null)
+                            readyWorlds.Enqueue(w);
                     }
                 }
                 parsedPastes.AddRange(newPastes);
