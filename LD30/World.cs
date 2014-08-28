@@ -63,6 +63,7 @@ namespace LD30
             string data = null;
             using(WebClient c = new WebClient())
                 data = c.DownloadString("http://pastebin.com/raw.php?i=" + paste.paste_key);
+
             createWorld(new BinaryReader(new MemoryStream(Convert.FromBase64String(data))));
         }
 
@@ -474,14 +475,44 @@ namespace LD30
 
         public void OnAdditionToSpace(Space newSpace)
         {
-            foreach(PropInstance p in objects)
-                newSpace.Add(p.Entity);
+            for(int i = 0; i < World.MaxSideLength; i++)
+                for(int j = 0; j < World.MaxSideLength; j++)
+                    for(int z = 0; z < World.MaxHeight; z++)
+                        if(grid[i,j,z] != null && grid[i,j,z].Entity.Space == null)
+                        {
+                            if(grid[i, j, z].BaseProp.ID != 0 || !grid[i,j,z].Immobile) // don't test non-cubes or non-immobile cubes
+                            {
+                                newSpace.Add(grid[i, j, z].Entity);
+                                Renderer.Add(grid[i, j, z]);
+                                continue;
+                            }
+
+                            // check to see if we're surrounded
+                            // assume objects on i,j edges are not surrounded
+                            bool notSurrounded = i == 0 || i == World.MaxSideLength - 1 || j == 0 || j == World.MaxSideLength - 1 || z == World.MaxHeight - 1;
+                            // short circuiting allows us to assume adding/subtracting one to i/j is valid and adding one to z is valid
+                            notSurrounded = notSurrounded || !(grid[i - 1, j, z] != null && grid[i + 1, j, z] != null && grid[i, j - 1, z] != null && grid[i, j + 1, z] != null && grid[i, j, z + 1] != null);
+                            // make sure that we're not only surrounded, but surrounded by cubes
+                            notSurrounded = notSurrounded || !(grid[i - 1, j, z].BaseProp.ID == 0 && grid[i + 1, j, z].BaseProp.ID == 0 && grid[i, j - 1, z].BaseProp.ID == 0 && grid[i, j + 1, z].BaseProp.ID == 0 && grid[i, j, z + 1].BaseProp.ID == 0);
+                            if(z != 0) // we will assume that we're surrounded on the bottom layer facing downwards
+                                notSurrounded |= grid[i, j, z - 1] != null && grid[i,j,z-1].BaseProp.ID == 0;
+
+                            if(notSurrounded) // if not completely surrounded, add
+                            {
+                                newSpace.Add(grid[i, j, z].Entity);
+                                Renderer.Add(grid[i, j, z]);
+                            }
+                        }
         }
 
         public void OnRemovalFromSpace(Space oldSpace)
         {
             foreach(PropInstance p in objects)
-                oldSpace.Remove(p.Entity);
+                if(p.Entity.Space != null)
+                {
+                    oldSpace.Remove(p.Entity);
+                    Renderer.Remove(p);
+                }
         }
 
         public Space Space { get; set; }

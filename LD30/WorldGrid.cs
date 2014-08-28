@@ -21,9 +21,7 @@ namespace LD30
         private List<Vector3> usedPoints = new List<Vector3>();
         private Queue<string> localWorlds = new Queue<string>();
         private Queue<World> readyWorlds = new Queue<World>();
-        private Queue<int> linkedWorlds = new Queue<int>();
         private object queueLock = new object();
-        private int removedWorlds = 0;
 
         public World Host { get { return connectedWorlds[0]; } }
         public World[] Worlds { get { return connectedWorlds.ToArray(); } }
@@ -78,18 +76,14 @@ namespace LD30
         public void TryAddWorld()
         {
             World newWorld = null;
-            int index = 0;
-            if(!Monitor.TryEnter(queueLock, TimeSpan.FromSeconds(1))) // this is on the main thread, we do not want to block for long
+            if(!Monitor.TryEnter(queueLock, TimeSpan.FromSeconds(0.5f))) // this is on the main thread, we do not want to block for long
             {
                 return;
             }
             try
             {
                 if(readyWorlds.Count > 0)
-                {
                     newWorld = readyWorlds.Dequeue();
-                    index = linkedWorlds.Dequeue();
-                }
             }
             finally
             {
@@ -97,36 +91,50 @@ namespace LD30
             }
             if(newWorld != null)
             {
-                bool success;
-                PropInstance bridge = makeBridge(connectedWorlds[index - removedWorlds], newWorld, out success);
-                if(success)
+                Vector3[] dirs = new[] { Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, -Vector3.UnitX };
+                List<PropInstance> newBridges = new List<PropInstance>();
+                foreach(Vector3 dir in dirs)
+                {
+                    Vector3 testWorldPosition = newWorld.WorldPosition - dir * (World.MaxSideLength + 10);
+                    World toConnect;
+                    if((toConnect = connectedWorlds.Find(w => w.WorldPosition == testWorldPosition)) != null)
+                    {
+                        PropInstance bridge = makeBridge(dir.X < 0 || dir.Y < 0 ? newWorld : toConnect, dir.X < 0 || dir.Y < 0 ? toConnect : newWorld);
+                        if(bridge != null)
+                            newBridges.Add(bridge);
+                    }
+                }
+                if(newBridges.Count != 0)
                 {
                     connectedWorlds.Add(newWorld);
-                    bridges.Add(bridge);
+                    bridges.AddRange(newBridges);
                     Host.Space.Add(newWorld);
-                    Host.Space.Add(bridge.Entity);
-                    bridge.FadeIn();
-                    bridge.Alpha = 0;
-                    Renderer.Add(bridge);
-                    foreach(PropInstance i in newWorld.Objects)
+                    foreach(PropInstance bridge in newBridges)
                     {
-                        i.Alpha = 0;
-                        i.FadeIn();
-                        Renderer.Add(i);
+                        Host.Space.Add(bridge.Entity);
+                        bridge.FadeIn();
+                        bridge.Alpha = 0;
+                        Renderer.Add(bridge);
                     }
+                    foreach(PropInstance i in newWorld.Objects)
+                        if(i.Entity.Space != null)
+                        {
+                            i.Alpha = 0;
+                            i.FadeIn();
+                            // already added to renderer
+                        }
                 }
                 else
                 {
-                    removedWorlds++;
-                    //// try to put it back
-                    //if(!Monitor.TryEnter(queueLock, TimeSpan.FromSeconds(1))) // this is on the main thread, we do not want to block for long
+                    // this was removed because putting the world back wouldn't be helpful; it would fail again next time
+                    // try to put it back
+                    //if(!Monitor.TryEnter(queueLock, TimeSpan.FromSeconds(0.5f))) // this is on the main thread, we do not want to block for long
                     //{
                     //    return;
                     //}
                     //try
                     //{
                     //    readyWorlds.Enqueue(newWorld);
-                    //    linkedWorlds.Enqueue(index);
                     //}
                     //finally
                     //{
@@ -163,10 +171,7 @@ namespace LD30
 
                 string filename = localWorlds.Dequeue();
                 if(File.Exists(filename))
-                {
                     readyWorlds.Enqueue(new World(Path.GetFileNameWithoutExtension(filename), File.ReadAllText(filename), worldPos));
-                    linkedWorlds.Enqueue(index);
-                }
             };
             List<paste> parsedPastes = new List<paste>();
             //Thread.Sleep(60000);
@@ -202,7 +207,6 @@ namespace LD30
 
                         World w = new World(p, worldPos);
                         readyWorlds.Enqueue(w);
-                        linkedWorlds.Enqueue(index);
                     }
                 }
                 parsedPastes.AddRange(newPastes);
@@ -223,14 +227,14 @@ namespace LD30
             }
         }
 
-        private PropInstance makeBridge(World w1, World w2, out bool success)
+        private PropInstance makeBridge(World w1, World w2)
         {
             PropInstance[, ,] grid1 = w1.Grid;
             PropInstance[, ,] grid2 = w2.Grid;
             Vector3 dir = w2.WorldPosition - w1.WorldPosition;
             dir.Normalize();
             Vector3 pos = Vector3.Zero;
-            success = false;
+            bool success = false;
             World baseWorld = dir.X > 0 || dir.Y > 0 ? w2 : w1;
             World otherWorld = baseWorld == w1 ? w2 : w1;
             // start at the center, move backwards a square, than forwards two squares, and so on
@@ -294,12 +298,9 @@ namespace LD30
 
         public void OnAdditionToSpace(Space newSpace)
         {
+            // adding/removing worlds to space implicitly adds/removes from renderer
             foreach(World w in connectedWorlds)
-            {
                 newSpace.Add(w);
-                foreach(PropInstance i in w.Objects)
-                    Renderer.Add(i);
-            }
             foreach(PropInstance b in bridges)
             {
                 newSpace.Add(b.Entity);
@@ -310,11 +311,7 @@ namespace LD30
         public void OnRemovalFromSpace(Space oldSpace)
         {
             foreach(World w in connectedWorlds)
-            {
                 oldSpace.Remove(w);
-                foreach(PropInstance i in w.Objects)
-                    Renderer.Remove(i);
-            }
             foreach(PropInstance b in bridges)
             {
                 oldSpace.Remove(b.Entity);

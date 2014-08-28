@@ -393,7 +393,13 @@ namespace LD30
                     if(EditableWorld.Space.RayCast(new BEPUutilities.Ray(Renderer.Camera.Position, forward), out result))
                     {
                         PropInstance instance = result.HitObject.Tag as PropInstance;
-                        if(instance != null && !instance.Immobile)
+                        if(instance != null && 
+#if DEBUG
+                            (!instance.Immobile || Renderer.Camera.Debug)
+#else
+                            !instance.Immobile
+#endif
+                            )
                         {
                             if(hoveredObject != null)
                             {
