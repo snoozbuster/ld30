@@ -13,6 +13,7 @@ bool xEnableClipping;
 bool xEnableCustomAlpha;
 float xCustomAlpha;
 bool xPassThroughLighting;
+bool xUseStructColor;
 
 //float3 xModelPos;
 //float3 xCamPos;
@@ -81,8 +82,9 @@ struct SSceneVertexToPixel
 	float2 TexCoords             : TEXCOORD1;
     float4 Position3D            : TEXCOORD2;
 	float4 ClipDistances		 : TEXCOORD3;
-
-	float3 Normal                : TEXCOORD4;
+	
+	float4 Color                 : TEXCOORD4;
+	float3 Normal                : TEXCOORD5;
 };
 
 struct SScenePixelToFrame
@@ -116,6 +118,10 @@ SScenePixelToFrame ShadowedScenePixelShader(SSceneVertexToPixel PSIn)
      SScenePixelToFrame Output = (SScenePixelToFrame)0;    
 
 	 float4 baseColor = xColor; //tex2D(TextureSampler, PSIn.TexCoords);
+     if(xUseStructColor)
+	 {
+		 baseColor = PSIn.Color;
+	 }
 	
 	 if(xPassThroughLighting)
 		{
@@ -191,24 +197,26 @@ technique ShadowedScene
 /////////////////////////////////
 
 SSceneVertexToPixel ShadowedSceneVertexShaderInstanced(float4 inPos : POSITION0, 
-													   float4 inPos2 : POSITION1,
+													   float4x4 inWorld : TEXCOORD0,
+													   float4 inColor : COLOR0,
 													   float3 inNormal : NORMAL)
 {
     SSceneVertexToPixel Output = (SSceneVertexToPixel)0;
     
-	//Output.ClipDistances.yzw = 0;
+	//Output.ClipDistances = dot(newPos, xClipPlane);
+	
 	Output.ClipDistances = dot(inPos, xClipPlane);
 
-	float4x4 customWorld = float4x4(1,0,0,0,0,1,0,0,0,0,1,0,inPos2);
-	customWorld = mul(xWorld, customWorld);
-    float4x4 preWorldViewProjection = mul (customWorld, xCamerasViewProjection);
-    float4x4 preLightsWorldViewProjection = mul (customWorld, xLightsViewProjection);
+	//float4x4 newWorld = mul(xWorld, inWorld);
+	float4x4 tWorld = transpose(inWorld);
+    float4x4 preWorldViewProjection = mul (tWorld, xCamerasViewProjection);
+    float4x4 preLightsWorldViewProjection = mul (tWorld, xLightsViewProjection);
 
     Output.Position = mul(inPos, preWorldViewProjection);    
     Output.Pos2DAsSeenByLight = mul(inPos, preLightsWorldViewProjection);    
-    Output.Normal = normalize(mul(inNormal, (float3x3)customWorld));    
-    Output.Position3D = mul(inPos, customWorld);
-    Output.TexCoords = float2(0, 0);    
+    Output.Normal = normalize(mul(inNormal, (float3x3)tWorld));    
+    Output.Position3D = mul(inPos, tWorld);
+	Output.Color = inColor;
 
     return Output;
 }
