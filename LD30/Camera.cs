@@ -24,6 +24,8 @@ namespace LD30
 
         public Quaternion Rotation { get; private set; }
 
+        public Microsoft.Xna.Framework.BoundingFrustum BoundingFrustum { get; private set; }
+
         private float rotation;
 
 #if DEBUG
@@ -36,7 +38,7 @@ namespace LD30
             Rotation = Quaternion.Identity;
             //Character = tracking;
             //Position = Character.Entity.CharacterController.Body.Position + new Vector3(-10, -10, 10);
-            ProjectionMatrix = MathConverter.Convert(Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, g.GraphicsDevice.Viewport.AspectRatio, .1f, 10000));
+            ProjectionMatrix = MathConverter.Convert(Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, g.GraphicsDevice.Viewport.AspectRatio, 1f, 150));
         }
 
         public void Update(Microsoft.Xna.Framework.GameTime gameTime)
@@ -60,6 +62,8 @@ namespace LD30
                 Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, rotation);
                 Offset = Microsoft.Xna.Framework.Vector3.Transform(new Vector3(-10, -10, 10), Rotation);
             }
+
+            BoundingFrustum = new Microsoft.Xna.Framework.BoundingFrustum(MathConverter.Convert(ViewMatrix * ProjectionMatrix));
         }
     }
 }

@@ -31,12 +31,13 @@ namespace LD30
 
         private static Dictionary<PropInstance, bool> models = new Dictionary<PropInstance, bool>();
         private static List<ModelData> multiMeshModel = new List<ModelData>();
-        //private static List<PropInstance> cubes = new List<PropInstance>();
-        //private static Dictionary<CompoundBody, InstancedData> compoundBodies = new Dictionary<CompoundBody, InstancedData>();
+        private static List<CompoundBody> compoundBodies = new List<CompoundBody>();
 
-        //private class InstancedData { Vector3 pos; Color col; public InstancedData(Vector3 p, Color c) { pos = p; col = c; } }
+        private struct InstanceData { public Matrix transform; public Vector4 col; }
 
-        //private static DynamicVertexBuffer instanceVertexBuffer;
+        private static DynamicVertexBuffer instanceVertexBuffer;
+
+        private static Dictionary<World, bool> canSeeWorldDict = new Dictionary<World, bool>();
 
         public static void Initialize(GraphicsDeviceManager gdm, BaseGame g, Space s, Effect sdr)
         {
@@ -64,8 +65,6 @@ namespace LD30
             if(models.ContainsKey(prop))
             {
                 models[prop] = true;
-                //if(prop.BaseProp.ID == 0)
-                //    cubes.Add(prop);
                 return;
             }
 
@@ -75,8 +74,6 @@ namespace LD30
                         foreach(ModelMeshPart meshPart in mesh.MeshParts)
                             meshPart.Effect = shader.Clone();
             models.Add(prop, true);
-            //if(prop.BaseProp.ID == 0)
-            //    cubes.Add(prop);
         }
 
         public static void Add(Model model, RenderInformationDelegate getData, bool transparent = false)
@@ -91,24 +88,22 @@ namespace LD30
             multiMeshModel.Add(new ModelData(model, getData, transparent));
         }
 
-        //public static void Add(CompoundBody body)
-        //{
-        //    if(!compoundBodies.ContainsKey(body))
-        //        compoundBodies.Add(body, body.CollisionInformation.Children.Select(c => MathConverter.Convert(c.CollisionInformation.WorldTransform.Matrix)).ToArray());
-        //}
+        public static void Add(CompoundBody body)
+        {
+            if(!compoundBodies.Contains(body))
+                compoundBodies.Add(body);
+        }
 
-        //public static void Remove(CompoundBody body)
-        //{
-        //    if(compoundBodies.ContainsKey(body))
-        //        compoundBodies.Remove(body);
-        //}
+        public static void Remove(CompoundBody body)
+        {
+            if(compoundBodies.Contains(body))
+                compoundBodies.Remove(body);
+        }
 
         public static void Remove(PropInstance model)
         {
             if(models.ContainsKey(model))
                 models[model] = false;
-            //if(model.BaseProp.ID == 0)
-            //    cubes.Remove(model);
         }
 
         public static void Remove(Model model)
@@ -116,6 +111,17 @@ namespace LD30
             foreach(ModelData m in multiMeshModel)
                 if(m.Model == model)
                     m.Active = false;
+        }
+
+        public static void Update(WorldGrid worlds)
+        {
+            foreach(World w in worlds.Worlds)
+            {
+                if(canSeeWorldDict.ContainsKey(w))
+                    canSeeWorldDict[w] = w.WorldBounds.Intersects(Camera.BoundingFrustum);
+                else
+                    canSeeWorldDict.Add(w, w.WorldBounds.Intersects(Camera.BoundingFrustum));
+            }
         }
 
         public static void Draw()
@@ -135,7 +141,7 @@ namespace LD30
                     if(!m.Key.Transparent)
                     {
                         //if(m.Key.BaseProp.ID != 0)
-                            drawMesh(m.Key.BaseProp.Model.Meshes[0], m.Key, "ShadowedScene", clipPlane, view);
+                            drawMesh(m.Key.BaseProp.Model.Meshes[0], m.Key, "ShadowedScene", clipPlane, view, ConversionHelper.MathConverter.Convert(m.Key.Entity.CollisionInformation.WorldTransform.Matrix));
                     }
                     else
                         transparentMeshes.Add(m.Key);
@@ -144,8 +150,9 @@ namespace LD30
                 if(m.Active && !m.Transparent)
                     drawMultiMesh(m, clipPlane, view);
             drawCharacter(Camera.Character, clipPlane, view);
-            //foreach(CompoundBody instances in compoundBodies.Keys)
-            //    drawCompoundBody(Prop.PropAssociations[0].Model.Meshes[0], instances, clipPlane, view);
+            foreach(CompoundBody instances in compoundBodies)
+                if(!(instances.CollisionInformation.Children[0].CollisionInformation.Tag as PropInstance).Transparent)
+                    drawCompoundBody(Prop.PropAssociations[0].Model.Meshes[0], instances, clipPlane, view);
 
 #if DEBUG
             drawAxes();
@@ -157,10 +164,13 @@ namespace LD30
             setForTransparency();
             transparentMeshes.Sort(new Comparison<PropInstance>(sortGlassList));
             foreach(PropInstance m in transparentMeshes)
-                drawMesh(m.BaseProp.Model.Meshes[0], m, "ShadowedScene", clipPlane, view);
+                drawMesh(m.BaseProp.Model.Meshes[0], m, "ShadowedScene", clipPlane, view, ConversionHelper.MathConverter.Convert(m.Entity.CollisionInformation.WorldTransform.Matrix));
             foreach(ModelData m in multiMeshModel)
                 if(m.Active && m.Transparent)
                     drawMultiMesh(m, clipPlane, view);
+            foreach(CompoundBody instances in compoundBodies)
+                if((instances.CollisionInformation.Children[0].CollisionInformation.Tag as PropInstance).Transparent)
+                    drawCompoundBody(Prop.PropAssociations[0].Model.Meshes[0], instances, clipPlane, view);
         }
 
         private static int sortGlassList(PropInstance x, PropInstance y)
@@ -177,6 +187,12 @@ namespace LD30
         {
             foreach(ModelMesh mesh in c.Model.Meshes)
             {
+                foreach(ModelMeshPart meshPart in mesh.MeshParts)
+                {
+                    GraphicsDevice.SetVertexBuffer(
+                        meshPart.VertexBuffer
+                    );
+                }
                 foreach(Effect currentEffect in mesh.Effects)
                 {
                     currentEffect.CurrentTechnique = currentEffect.Techniques["ShadowedScene"];
@@ -190,6 +206,7 @@ namespace LD30
                     currentEffect.Parameters["xLightPower"].SetValue(0.4f);
                     currentEffect.Parameters["xAmbient"].SetValue(0.7f);
                     currentEffect.Parameters["xLightDir"].SetValue(-Vector3.UnitZ);
+                    currentEffect.Parameters["xUseStructColor"].SetValue(false);
 
                     if(clipPlane.HasValue)
                     {
@@ -212,6 +229,12 @@ namespace LD30
             //int i = 0;
             foreach(ModelMesh mesh in m.Model.Meshes)
             {
+                foreach(ModelMeshPart meshPart in mesh.MeshParts)
+                {
+                    GraphicsDevice.SetVertexBuffer(
+                        meshPart.VertexBuffer
+                    );
+                }
                 foreach(Effect currentEffect in mesh.Effects)
                 {
                     currentEffect.CurrentTechnique = currentEffect.Techniques["ShadowedScene"];
@@ -225,6 +248,7 @@ namespace LD30
                     currentEffect.Parameters["xLightPower"].SetValue(0.4f);
                     currentEffect.Parameters["xAmbient"].SetValue(0.7f);
                     currentEffect.Parameters["xLightDir"].SetValue(-Vector3.UnitZ);
+                    currentEffect.Parameters["xUseStructColor"].SetValue(false);
 
                     if(clipPlane.HasValue)
                     {
@@ -245,71 +269,107 @@ namespace LD30
             }
         }
 
-        //static VertexDeclaration instanceVertexDeclaration = new VertexDeclaration
-        //(
-        //    new VertexElement(0, VertexElementFormat.Vector4, VertexElementUsage.Position, 1),
-        //    new VertexElement(16, VertexElementFormat.Vector4, VertexElementUsage.Color, 0)
-        //);  
+        static VertexDeclaration instanceVertexDeclaration = new VertexDeclaration
+        (
+            new VertexElement(0, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 0),
+            new VertexElement(16, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 1),
+            new VertexElement(32, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 2),
+            new VertexElement(48, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 3),
+            new VertexElement(64, VertexElementFormat.Vector4, VertexElementUsage.Color, 0)
+        );
 
-        //private static void drawCompoundBody(ModelMesh mesh, CompoundBody body, Plane? clipPlane, Matrix view)
-        //{
-        //    Matrix[] instances = compoundBodies[body];
-        //    if((instanceVertexBuffer == null) || (instances.Length > instanceVertexBuffer.VertexCount))
-        //    {
-        //        if(instanceVertexBuffer != null)
-        //            instanceVertexBuffer.Dispose();
-
-        //        instanceVertexBuffer = new DynamicVertexBuffer(GraphicsDevice, instanceVertexDeclaration,
-        //                                                       instances.Length, BufferUsage.WriteOnly);
-        //    }
-
-        //    // Transfer the latest instance transform matrices into the instanceVertexBuffer.
-        //    instanceVertexBuffer.SetData(instances, 0, instances.Length, SetDataOptions.Discard);
-
-        //    foreach(ModelMeshPart meshPart in mesh.MeshParts)
-        //    {
-        //        // Tell the GPU to read from both the model vertex buffer plus our instanceVertexBuffer.
-        //        GraphicsDevice.SetVertexBuffers(
-        //            new VertexBufferBinding(meshPart.VertexBuffer, meshPart.VertexOffset, 0),
-        //            new VertexBufferBinding(instanceVertexBuffer, 0, 1)
-        //        );
-
-        //        GraphicsDevice.Indices = meshPart.IndexBuffer;
-
-        //        // Set up the instance rendering effect.
-        //        Effect currentEffect = meshPart.Effect;
-        //        currentEffect.CurrentTechnique = currentEffect.Techniques["ShadowedSceneInstanced"];
-        //        currentEffect.Parameters["xCamerasViewProjection"].SetValue(view * MathConverter.Convert(Camera.ProjectionMatrix));
-        //        currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform * MathConverter.Convert(body.WorldTransform));// * Camera.World);
-        //        currentEffect.Parameters["xColor"].SetValue((body.Tag as PropInstance).Color.ToVector4());
-        //        currentEffect.Parameters["xLightPos"].SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 10));
-        //        currentEffect.Parameters["xLightPower"].SetValue(0.4f);
-        //        currentEffect.Parameters["xAmbient"].SetValue(0.7f);
-        //        currentEffect.Parameters["xLightDir"].SetValue(-Vector3.UnitZ);
-
-        //        if(clipPlane.HasValue)
-        //        {
-        //            currentEffect.Parameters["xEnableClipping"].SetValue(true);
-        //            currentEffect.Parameters["xClipPlane"].SetValue(new Vector4(clipPlane.Value.Normal, clipPlane.Value.D));
-        //        }
-        //        else
-        //            currentEffect.Parameters["xEnableClipping"].SetValue(false);
-
-        //        // Draw all the instance copies in a single call.
-        //        foreach(EffectPass pass in effect.CurrentTechnique.Passes)
-        //        {
-        //            pass.Apply();
-
-        //            GraphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0,
-        //                                                    meshPart.NumVertices, meshPart.StartIndex,
-        //                                                    meshPart.PrimitiveCount, instances.Length);
-        //        }
-        //    }
-        //}
-
-        private static void drawMesh(ModelMesh mesh, PropInstance prop, string tech, Plane? clipPlane, Matrix view)
+        private static void drawCompoundBody(ModelMesh mesh, CompoundBody body, Plane? clipPlane, Matrix view)
         {
-            Matrix entityWorld = ConversionHelper.MathConverter.Convert(prop.Entity.CollisionInformation.WorldTransform.Matrix);
+            //foreach(PropInstance instance in body.CollisionInformation.Children.Select(c => c.CollisionInformation.Tag as PropInstance))
+            //{
+            //    drawMesh(Prop.PropAssociations[0].Model.Meshes[0], instance, "ShadowedScene", clipPlane, view, MathConverter.Convert(instance.Entity.WorldTransform));
+            //}
+            World w = null;
+            InstanceData[] data = new InstanceData[body.CollisionInformation.Children.Count];
+            bool useAlpha = false;
+            float alpha = 1;
+            for(int i = 0; i < body.CollisionInformation.Children.Count; i++)
+            {
+                PropInstance instance = body.CollisionInformation.Children[i].CollisionInformation.Tag as PropInstance;
+                data[i] = new InstanceData() { col = instance.Color.ToVector4(), transform = MathConverter.Convert(instance.Entity.WorldTransform) };
+                if(w == null)
+                {
+                    w = instance.ContainingWorld;
+                    if(!canSeeWorldDict[w])
+                        return;
+                    // all the instances will have similar or identical alpha settings
+                    useAlpha = instance.Transparent;
+                    alpha = instance.Alpha;
+                }
+            }
+            if((instanceVertexBuffer == null) || (data.Length > instanceVertexBuffer.VertexCount))
+            {
+                if(instanceVertexBuffer != null)
+                    instanceVertexBuffer.Dispose();
+
+                instanceVertexBuffer = new DynamicVertexBuffer(GraphicsDevice, instanceVertexDeclaration,
+                                                               data.Length, BufferUsage.WriteOnly);
+            }
+
+            // Transfer the latest instance transform matrices into the instanceVertexBuffer.
+            instanceVertexBuffer.SetData(data, 0, data.Length, SetDataOptions.Discard);
+
+            foreach(ModelMeshPart meshPart in mesh.MeshParts)
+            {
+                // Tell the GPU to read from both the model vertex buffer plus our instanceVertexBuffer.
+                GraphicsDevice.SetVertexBuffers(
+                    new VertexBufferBinding(meshPart.VertexBuffer, meshPart.VertexOffset, 0),
+                    new VertexBufferBinding(instanceVertexBuffer, 0, 1)
+                );
+
+                GraphicsDevice.Indices = meshPart.IndexBuffer;
+
+                // Set up the instance rendering effect.
+                Effect currentEffect = meshPart.Effect;
+                currentEffect.CurrentTechnique = currentEffect.Techniques["ShadowedSceneInstanced"];
+                currentEffect.Parameters["xCamerasViewProjection"].SetValue(view * MathConverter.Convert(Camera.ProjectionMatrix));
+                currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform);// * Camera.World);
+                //currentEffect.Parameters["xColor"].SetValue((body.Tag as PropInstance).Color.ToVector4());
+                currentEffect.Parameters["xLightPos"].SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 10));
+                currentEffect.Parameters["xLightPower"].SetValue(0.4f);
+                currentEffect.Parameters["xAmbient"].SetValue(0.7f);
+                currentEffect.Parameters["xLightDir"].SetValue(-Vector3.UnitZ);
+                currentEffect.Parameters["xUseStructColor"].SetValue(true);
+
+                if(clipPlane.HasValue)
+                {
+                    currentEffect.Parameters["xEnableClipping"].SetValue(true);
+                    currentEffect.Parameters["xClipPlane"].SetValue(new Vector4(clipPlane.Value.Normal, clipPlane.Value.D));
+                }
+                else
+                    currentEffect.Parameters["xEnableClipping"].SetValue(false);
+                if(useAlpha)
+                {
+                    currentEffect.Parameters["xEnableCustomAlpha"].SetValue(true);
+                    currentEffect.Parameters["xCustomAlpha"].SetValue(alpha);
+                }
+                else
+                    currentEffect.Parameters["xEnableCustomAlpha"].SetValue(false);
+                
+                currentEffect.CurrentTechnique.Passes[0].Apply();
+                
+                GraphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0,
+                                                        meshPart.NumVertices, meshPart.StartIndex,
+                                                        meshPart.PrimitiveCount, data.Length);
+            }
+        }
+
+        private static void drawMesh(ModelMesh mesh, PropInstance prop, string tech, Plane? clipPlane, Matrix view, Matrix world)
+        {
+            if(prop.ContainingWorld != null && !canSeeWorldDict[prop.ContainingWorld])
+                return;
+
+            foreach(ModelMeshPart meshPart in mesh.MeshParts)
+            {
+                GraphicsDevice.SetVertexBuffer(
+                    meshPart.VertexBuffer
+                );
+            }
             foreach(Effect currentEffect in mesh.Effects)
             {
                 currentEffect.CurrentTechnique = currentEffect.Techniques[tech];
@@ -317,11 +377,12 @@ namespace LD30
                 currentEffect.Parameters["xColor"].SetValue(prop.Color.ToVector4());
 
                 currentEffect.Parameters["xCamerasViewProjection"].SetValue(view * MathConverter.Convert(Camera.ProjectionMatrix));
-                currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform * Matrix.CreateTranslation(-prop.InitialEntityTranslation) * (prop.Transparent ? Matrix.CreateScale(0.99f) : Matrix.Identity) * Matrix.CreateScale(prop.Scale) *  entityWorld);// * Camera.World);
+                currentEffect.Parameters["xWorld"].SetValue(mesh.ParentBone.Transform * Matrix.CreateTranslation(-prop.InitialEntityTranslation) * (prop.Transparent ? Matrix.CreateScale(0.99f) : Matrix.Identity) * Matrix.CreateScale(prop.Scale) * world);// * Camera.World);
                 currentEffect.Parameters["xLightPos"].SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 10));
                 currentEffect.Parameters["xLightPower"].SetValue(0.4f);
                 currentEffect.Parameters["xAmbient"].SetValue(0.7f);
                 currentEffect.Parameters["xLightDir"].SetValue(-Vector3.UnitZ);
+                currentEffect.Parameters["xUseStructColor"].SetValue(false);
 
                 if(clipPlane.HasValue)
                 {
@@ -345,9 +406,8 @@ namespace LD30
         {
             GraphicsDevice.BlendState = BlendState.Opaque;
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            GraphicsDevice.RasterizerState = RasterizerState.CullNone;
+            GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
             GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
-            GraphicsDevice.SamplerStates[1] = SamplerState.LinearWrap;
         }
 
         private static void setForTransparency()

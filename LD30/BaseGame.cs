@@ -155,6 +155,7 @@ namespace LD30
                         character.Update(gameTime, editor.IsOpen);
                         if(!editor.IsOpen)
                             camera.Update(gameTime);
+                        Renderer.Update(WorldGrid);
                         GameManager.Space.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
                     }
                 }

@@ -112,17 +112,16 @@ namespace LD30
                     foreach(PropInstance bridge in newBridges)
                     {
                         Host.Space.Add(bridge.Entity);
-                        bridge.FadeIn();
                         bridge.Alpha = 0;
+                        bridge.FadeIn();
                         Renderer.Add(bridge);
                     }
                     foreach(PropInstance i in newWorld.Objects)
-                        if(i.Entity.Space != null)
-                        {
-                            i.Alpha = 0;
-                            i.FadeIn();
-                            // already added to renderer
-                        }
+                    {
+                        i.Alpha = 0;
+                        i.FadeIn();
+                        // already added to renderer
+                    }
                 }
                 else
                 {
@@ -269,7 +268,7 @@ namespace LD30
                             // found! convert to world pos (unlike most props, the bridge uses world coords, not grid coords)
                             // it turns out this process is way easier than I expected
                             success = true;
-                            pos = new Vector3(x - 5 * Math.Abs(dir.X), y - 5 * Math.Abs(dir.Y), z - 0.1f) - w1.WorldPosition;
+                            pos = new Vector3(x - 5 * Math.Abs(dir.X), y - 5 * Math.Abs(dir.Y), z - 0.1f);
                             break;
                         }
                         // one step back, two steps forward
@@ -279,7 +278,7 @@ namespace LD30
             if(!success)
                 return null;
 
-            PropInstance m = Program.Game.Loader.bridge.CreateInstance(pos, Vector3.One, 0, new Microsoft.Xna.Framework.Color(0.8f, 0.8f, 0.8f), true, w1);
+            PropInstance m = Program.Game.Loader.bridge.CreateInstance(pos, Vector3.One, 0, new Microsoft.Xna.Framework.Color(0.8f, 0.8f, 0.8f), true, null);
             if(dir.Y != 0)
                 m.Entity.Orientation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathHelper.PiOver2);
             m.Entity.CollisionInformation.Events.DetectingInitialCollision += (sender, other, pair) => {

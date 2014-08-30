@@ -1,8 +1,11 @@
 ﻿using Accelerated_Delivery_Win;
 using BEPUphysics;
+using BEPUphysics.BroadPhaseEntries;
 using BEPUphysics.BroadPhaseEntries.MobileCollidables;
+using BEPUphysics.CollisionRuleManagement;
 using BEPUphysics.CollisionShapes;
 using BEPUphysics.Entities.Prefabs;
+using BEPUphysics.Materials;
 using BEPUutilities;
 using ConversionHelper;
 using Microsoft.Xna.Framework.Graphics;
@@ -20,11 +23,14 @@ namespace LD30
         public const int MaxSideLength = 32;
         public const int MaxHeight = 8;
 
+        public Microsoft.Xna.Framework.BoundingBox WorldBounds { get; private set; }
+
         public readonly string OwnerName;
         public List<PropInstance> Objects { get { return new List<PropInstance>(objects); } }
         private List<PropInstance> objects;
 
-        //private CompoundBody terrain;
+        private CompoundBody terrain;
+        private List<CompoundChildData> terrainParts = new List<CompoundChildData>();
 
         public Vector3 WorldPosition { get; private set; }
 
@@ -34,6 +40,7 @@ namespace LD30
         public World(string name, string data, Vector3 worldPos)
         {
             WorldPosition = worldPos;
+            WorldBounds = new Microsoft.Xna.Framework.BoundingBox(WorldPosition, WorldPosition + new Vector3(World.MaxSideLength, World.MaxSideLength, World.MaxHeight));
             OwnerName = name;
             objects = new List<PropInstance>();
             createWorld(new BinaryReader(new MemoryStream(Convert.FromBase64String(data))));
@@ -48,6 +55,7 @@ namespace LD30
             OwnerName = name;
             objects = new List<PropInstance>();
             WorldPosition = Vector3.Zero;
+            WorldBounds = new Microsoft.Xna.Framework.BoundingBox(WorldPosition, WorldPosition + new Vector3(World.MaxSideLength, World.MaxSideLength, World.MaxHeight));
             createWorld();
         }
 
@@ -58,6 +66,7 @@ namespace LD30
         public World(paste paste, Vector3 worldPos)
         {
             WorldPosition = worldPos;
+            WorldBounds = new Microsoft.Xna.Framework.BoundingBox(WorldPosition, WorldPosition + new Vector3(World.MaxSideLength, World.MaxSideLength, World.MaxHeight));
             OwnerName = paste.paste_title;
             objects = new List<PropInstance>();
             string data = null;
@@ -118,14 +127,12 @@ namespace LD30
             baseTerrainArray = mask(baseTerrainArray, size, r);
             baseTerrainArray = smooth(baseTerrainArray, size, 2);
 
-            //beginCompounding();
             for(int z = 0; z < World.MaxHeight; z++) // although it's slower to put this on the outside, it allows "grouping" of "layers", should it be needed
                 for(int i = 0; i < World.MaxSideLength; i++)
                     for(int j = 0; j < World.MaxSideLength; j++)
                         if(z < baseTerrainArray[i, j])
                             AddObject(Prop.PropAssociations[0].CreateInstance(new BEPUutilities.Vector3(i, j, z) + WorldPosition,
                                 Vector3.One, 0, new Microsoft.Xna.Framework.Color((z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight), (z + 1) * (255 / World.MaxHeight)), true, this), i, j, z);
-            //terrain = endCompounding();
             for(int i = 0; i < World.MaxSideLength; i++)
                 for(int j = 0; j < World.MaxSideLength; j++)
                 {
@@ -154,25 +161,27 @@ namespace LD30
                 }
         }
 
-        //private bool compounding = false;
-        //private int firstNonCubeIndex = 0;
-        //private void beginCompounding()
-        //{
-        //    compounding = true;
-        //}
+        private bool compounding = false;
+        private int firstNonCubeIndex = 0;
+        private void beginCompounding()
+        {
+            compounding = true;
+        }
 
-        //private CompoundBody endCompounding()
-        //{
-        //    compounding = false;
-        //    firstNonCubeIndex = objects.Count + 1;
-        //    return new CompoundBody(objects.Select(i => new CompoundShapeEntry(i.Entity.CollisionInformation.Shape)).ToList()) { Tag = objects[0] };
-        //}
+        private CompoundBody endCompounding()
+        {
+            compounding = false;
+            firstNonCubeIndex = objects.Count + 1;
+            CompoundBody c = new CompoundBody(terrainParts);
+            //c.Position += WorldPosition;
+            return c;
+        }
 
         public void AddObject(PropInstance instance, int i, int j, int z)
         {
             objects.Add(instance);
             fillGrid(instance, instance.CorrectedDimensions, instance.CorrectedScale, i, j, z);
-            if(Space != null)// && !compounding)
+            if(Space != null)
             {
                 Space.Add(instance.Entity);
                 Renderer.Add(instance);
@@ -432,17 +441,9 @@ namespace LD30
         private void createWorld(BinaryReader reader)
         {
             int num = reader.ReadInt32();
-            //beginCompounding();
             for(int i = 0; i < num; i++)
             {
                 var instance = reader.ReadPropInstance(this);
-                if(WorldPosition != Vector3.Zero)
-                    instance.Immobile = true;
-                //if(instance.BaseProp.ID != 0)
-                //{
-                //    firstNonCubeIndex--;
-                //    terrain = endCompounding();
-                //}
                 AddObject(instance, (int)instance.Position.X, (int)instance.Position.Y, (int)instance.Position.Z);
             }
         }
@@ -475,12 +476,13 @@ namespace LD30
 
         public void OnAdditionToSpace(Space newSpace)
         {
+            beginCompounding();
             for(int i = 0; i < World.MaxSideLength; i++)
                 for(int j = 0; j < World.MaxSideLength; j++)
                     for(int z = 0; z < World.MaxHeight; z++)
-                        if(grid[i,j,z] != null && grid[i,j,z].Entity.Space == null)
+                        if(grid[i, j, z] != null && grid[i, j, z].Entity.Space == null)
                         {
-                            if(grid[i, j, z].BaseProp.ID != 0 || !grid[i,j,z].Immobile) // don't test non-cubes or non-immobile cubes
+                            if(grid[i, j, z].BaseProp.ID != 0 || !grid[i, j, z].Immobile) // don't test non-cubes or non-immobile cubes
                             {
                                 newSpace.Add(grid[i, j, z].Entity);
                                 Renderer.Add(grid[i, j, z]);
@@ -495,18 +497,45 @@ namespace LD30
                             // make sure that we're not only surrounded, but surrounded by cubes
                             notSurrounded = notSurrounded || !(grid[i - 1, j, z].BaseProp.ID == 0 && grid[i + 1, j, z].BaseProp.ID == 0 && grid[i, j - 1, z].BaseProp.ID == 0 && grid[i, j + 1, z].BaseProp.ID == 0 && grid[i, j, z + 1].BaseProp.ID == 0);
                             if(z != 0) // we will assume that we're surrounded on the bottom layer facing downwards
-                                notSurrounded |= grid[i, j, z - 1] != null && grid[i,j,z-1].BaseProp.ID == 0;
+                                notSurrounded |= grid[i, j, z - 1] != null && grid[i, j, z - 1].BaseProp.ID == 0;
 
                             if(notSurrounded) // if not completely surrounded, add
                             {
-                                newSpace.Add(grid[i, j, z].Entity);
-                                Renderer.Add(grid[i, j, z]);
+                                if(compounding)
+                                    terrainParts.Add(new CompoundChildData()
+                                    {
+                                        CollisionRules = grid[i, j, z].Entity.CollisionInformation.CollisionRules,
+                                        Entry = new CompoundShapeEntry(grid[i, j, z].Entity.CollisionInformation.Shape, new RigidTransform(grid[i, j, z].Entity.Position, grid[i, j, z].Entity.Orientation)),
+                                        Events = null,
+                                        Material = grid[i, j, z].Entity.Material,
+                                        Tag = grid[i, j, z]
+                                    });
+                                else
+                                {
+                                    newSpace.Add(grid[i, j, z].Entity);
+                                    Renderer.Add(grid[i, j, z]);
+                                }
                             }
                         }
+            terrain = endCompounding();
+            newSpace.Add(terrain);
+            Renderer.Add(terrain);
+            // this has to be delayed for worlds that aren't your own to get compounding working correctly;
+            // compounded terrain will not turn transparent when you're standing behind it
+            if(WorldPosition != Vector3.Zero)
+                foreach(PropInstance p in objects)
+                    p.Immobile = true;
+            foreach(PropInstance p in objects.Skip(firstNonCubeIndex - 1))
+            {
+                newSpace.Add(p.Entity);
+                Renderer.Add(p);
+            }
         }
 
         public void OnRemovalFromSpace(Space oldSpace)
         {
+            oldSpace.Remove(terrain);
+            Renderer.Remove(terrain);
             foreach(PropInstance p in objects)
                 if(p.Entity.Space != null)
                 {

@@ -57,7 +57,7 @@ namespace LD30
 
         public PropInstance CreateInstance(Vector3 position, Vector3 scale, float rotation, Color color, bool immobile, World w)
         {
-            return new PropInstance(scale, position, rotation, color, EntityCreator(position + MathConverter.Convert(w.WorldPosition), scale), immobile, this, w);
+            return new PropInstance(scale, position, rotation, color, EntityCreator(position + (w != null ? MathConverter.Convert(w.WorldPosition) : Vector3.Zero), scale), immobile, this, w);
         }
 
         public static PropInstance CreateInstance(int ID, Vector3 position, Vector3 scale, float rotation, Color color, bool immobile, World w)

@@ -49,14 +49,15 @@ namespace LD30
             Color = color;
             BaseProp = baseProp;
             ContainingWorld = w;
+            Alpha = 1;
         }
 
         // must be added to world and space
         public void FadeIn()
         {
             Transparent = true;
-            if(fadeDirection == 0 && Entity.Space != null)
-                Entity.Space.DuringForcesUpdateables.Starting += fade;
+            if(fadeDirection == 0)
+                Accelerated_Delivery_Win.GameManager.Space.DuringForcesUpdateables.Starting += fade;
             fadeDirection = 1;
             minAlpha = 0;
         }
@@ -65,8 +66,8 @@ namespace LD30
         public void FadeOut(float minAlpha = 0)
         {
             Transparent = true;
-            if(fadeDirection == 0 && Entity.Space != null)
-                Entity.Space.DuringForcesUpdateables.Starting += fade;
+            if(fadeDirection == 0)
+                Accelerated_Delivery_Win.GameManager.Space.DuringForcesUpdateables.Starting += fade;
             fadeDirection = -1;
             this.minAlpha = minAlpha;
         }
@@ -79,7 +80,7 @@ namespace LD30
                 Alpha = MathHelper.Clamp(Alpha, minAlpha, 1);
                 if(Alpha == minAlpha || Alpha == 1)
                 {
-                    Entity.Space.DuringForcesUpdateables.Starting -= fade;
+                    Accelerated_Delivery_Win.GameManager.Space.DuringForcesUpdateables.Starting -= fade;
                     fadeDirection = 0;
                     if(Alpha == 1)
                         Transparent = false;

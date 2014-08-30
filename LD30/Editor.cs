@@ -28,6 +28,8 @@ namespace LD30
 
         private PropInstance placingObject;
         private PropInstance hoveredObject;
+        private bool hoveredObjectPrevTransparency;
+        private float hoveredObjectPrevAlpha;
         private Model cube;
         private bool validLocation;
         private bool collidingWithCharacter;
@@ -250,7 +252,8 @@ namespace LD30
                 forward.Normalize();
 
                 List<BEPUphysics.RayCastResult> results = new List<BEPUphysics.RayCastResult>();
-                if(EditableWorld.Space.RayCast(new BEPUutilities.Ray(Renderer.Camera.Position, forward), distance, results))
+                BEPUutilities.Ray ray = new BEPUutilities.Ray(Renderer.Camera.Position, forward);
+                if(EditableWorld.Space.RayCast(ray, distance, results))
                 {
                     results.Sort(new Comparison<BEPUphysics.RayCastResult>((x, y) =>
                     {
@@ -260,7 +263,16 @@ namespace LD30
                     }));
                     foreach(var result in results)
                     {
-                        var instance = result.HitObject.Tag as PropInstance;
+                        var compound = result.HitObject as CompoundCollidable;
+                        PropInstance instance = null;
+                        if(compound != null)
+                        {
+                            BEPUphysics.RayCastResult compoundResult;
+                            if(compound.RayCast(ray, distance, out compoundResult))
+                                instance = compoundResult.HitObject.Tag as PropInstance;
+                        }
+                        else
+                            instance = result.HitObject.Tag as PropInstance;
                         if(instance != null && instance != placingObject && (instance.BaseProp.IsGround || instance.BaseProp.IsWall))
                         {
                             Vector3 temp;
@@ -314,8 +326,8 @@ namespace LD30
                     IsOpen = false;
                     if(hoveredObject != null)
                     {
-                        hoveredObject.Transparent = false;
-                        hoveredObject.Alpha = 1;
+                        hoveredObject.Transparent = hoveredObjectPrevTransparency;
+                        hoveredObject.Alpha = hoveredObjectPrevAlpha;
                         hoveredObject = null;
                     }
                     return;
@@ -403,10 +415,12 @@ namespace LD30
                         {
                             if(hoveredObject != null)
                             {
-                                hoveredObject.Transparent = false;
-                                hoveredObject.Alpha = 1;
+                                hoveredObject.Transparent = hoveredObjectPrevTransparency;
+                                hoveredObject.Alpha = hoveredObjectPrevAlpha;
                             }
                             hoveredObject = instance;
+                            hoveredObjectPrevAlpha = hoveredObject.Alpha;
+                            hoveredObjectPrevTransparency = hoveredObject.Transparent;
                             hoveredObject.Transparent = true;
                             hoveredObject.Alpha = 0.3f;
                             if(Input.CheckMouseJustClicked(Program.Game.IsActive))
@@ -418,15 +432,15 @@ namespace LD30
                         }
                         else if(hoveredObject != null && hoveredObject != instance)
                         {
-                            hoveredObject.Transparent = false;
-                            hoveredObject.Alpha = 1;
+                            hoveredObject.Transparent = hoveredObjectPrevTransparency;
+                            hoveredObject.Alpha = hoveredObjectPrevAlpha;
                             hoveredObject = null;
                         }
                     }
                     else if(hoveredObject != null)
                     {
-                        hoveredObject.Transparent = false;
-                        hoveredObject.Alpha = 1;
+                        hoveredObject.Transparent = hoveredObjectPrevTransparency;
+                        hoveredObject.Alpha = hoveredObjectPrevAlpha;
                         hoveredObject = null;
                     }
                 }

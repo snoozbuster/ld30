@@ -94,9 +94,9 @@ namespace LD30
             var count = 3;
             while(count > 0)
             {
-                Vector3 dir1 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.9f - (3 - count) * Vector3.UnitZ * 1.2f + -Renderer.Camera.ViewMatrix.Right * (Entity.CharacterController.BodyRadius + 0.05f)) - Renderer.Camera.Position;
-                Vector3 dir2 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.9f - (3 - count) * Vector3.UnitZ * 1.2f + Renderer.Camera.ViewMatrix.Right * (Entity.CharacterController.BodyRadius + 0.05f)) - Renderer.Camera.Position;
-                Vector3 dir3 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.9f - (3 - count) * Vector3.UnitZ * 1.2f) - Renderer.Camera.Position;
+                Vector3 dir1 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.8f - (3 - count) * Vector3.UnitZ * 1.2f + -Renderer.Camera.ViewMatrix.Right * (Entity.CharacterController.BodyRadius + 0.05f)) - Renderer.Camera.Position;
+                Vector3 dir2 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.8f - (3 - count) * Vector3.UnitZ * 1.2f + Renderer.Camera.ViewMatrix.Right * (Entity.CharacterController.BodyRadius + 0.05f)) - Renderer.Camera.Position;
+                Vector3 dir3 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.8f - (3 - count) * Vector3.UnitZ * 1.2f) - Renderer.Camera.Position;
                 float length1 = dir1.Length();
                 float length2 = dir2.Length();
                 float length3 = dir3.Length();
