@@ -27,7 +27,7 @@ namespace LD30
         public bool DisplayingText { get; private set; }
         private string text;
 
-        private Collidable lastGround = null;
+        private Vector3 lastGround;
 
         private Dictionary<PropInstance, Vector3> fadedProps = new Dictionary<PropInstance, Vector3>();
 
@@ -43,11 +43,11 @@ namespace LD30
         public void Update(Microsoft.Xna.Framework.GameTime gameTime, bool editorOpen)
         {
             if(Entity.CharacterController.SupportFinder.HasSupport)
-                lastGround = Entity.CharacterController.SupportFinder.SupportData.Value.SupportObject;
+                lastGround = Entity.CharacterController.SupportFinder.SupportData.Value.Position;
 
             if(Entity.CharacterController.Body.Position.Z < -1)
             {
-                Entity.CharacterController.Body.Position = (lastGround as EntityCollidable).WorldTransform.Position + new Vector3(0, 0, 3.5f);
+                Entity.CharacterController.Body.Position = lastGround + new Vector3(0, 0, 3.5f);
                 Entity.CharacterController.Body.LinearVelocity = Vector3.Zero;
             }
             if(!editorOpen)
