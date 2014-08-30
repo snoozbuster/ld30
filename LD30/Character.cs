@@ -77,32 +77,6 @@ namespace LD30
 #endif
             }
 
-            Vector3 dir = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ) - Renderer.Camera.Position;
-            float length = dir.Length();
-            dir.Normalize();
-            List<BEPUphysics.RayCastResult> results = new List<BEPUphysics.RayCastResult>();
-            var count = 3;
-            while(count > 0)
-            {
-                if(Entity.Space.RayCast(new Ray(Renderer.Camera.Position, dir), length, results))
-                {
-                    foreach(var result in results)
-                    {
-                        var instance = result.HitObject.Tag as PropInstance;
-                        if(instance != null && instance.Alpha == 1 && !fadedProps.ContainsKey(instance))
-                        {
-                            instance.FadeOut(0.2f);
-                            fadedProps.Add(instance, dir);
-                        }
-                    }
-                }
-                else if(count == 3)
-                    break;
-                results.Clear();
-                dir = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ - (3 - --count) * Vector3.UnitZ * 1.25f) - Renderer.Camera.Position;
-                length = dir.Length();
-                dir.Normalize();
-            }
             int i = 0;
             BEPUphysics.RayCastResult r;
             while(i < fadedProps.Count)
@@ -115,6 +89,38 @@ namespace LD30
                     i--;
                 }
                 i++;
+            }
+            List<BEPUphysics.RayCastResult> results = new List<BEPUphysics.RayCastResult>();
+            var count = 3;
+            while(count > 0)
+            {
+                Vector3 dir1 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.9f - (3 - count) * Vector3.UnitZ * 1.2f + -Renderer.Camera.ViewMatrix.Right * (Entity.CharacterController.BodyRadius + 0.05f)) - Renderer.Camera.Position;
+                Vector3 dir2 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.9f - (3 - count) * Vector3.UnitZ * 1.2f + Renderer.Camera.ViewMatrix.Right * (Entity.CharacterController.BodyRadius + 0.05f)) - Renderer.Camera.Position;
+                Vector3 dir3 = (Entity.CharacterController.Body.Position + Entity.CharacterController.Body.Height * Vector3.UnitZ * 0.9f - (3 - count) * Vector3.UnitZ * 1.2f) - Renderer.Camera.Position;
+                float length1 = dir1.Length();
+                float length2 = dir2.Length();
+                float length3 = dir3.Length();
+                dir1.Normalize();
+                dir2.Normalize();
+                dir3.Normalize();
+                if(Entity.Space.RayCast(new Ray(Renderer.Camera.Position, dir1), length1, results) ||
+                    Entity.Space.RayCast(new Ray(Renderer.Camera.Position, dir2), length2, results) ||
+                    Entity.Space.RayCast(new Ray(Renderer.Camera.Position, dir3), length3, results))
+                {
+                    foreach(var result in results)
+                    {
+                        var instance = result.HitObject.Tag as PropInstance;
+                        if(instance != null && !fadedProps.ContainsKey(instance))
+                        {
+                            instance.FadeOut(0.2f);
+                            fadedProps.Add(instance, (result.HitData.Location - Renderer.Camera.Position) / result.HitData.T);
+                        }
+                    }
+                }
+                else if(count == 3)
+                    break;
+                results.Clear();
+                count--;
             }
         }
 
