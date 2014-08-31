@@ -39,6 +39,11 @@ namespace LD30
 #endif
         }
 
+        public static Microsoft.Xna.Framework.Vector3 Abs(this Microsoft.Xna.Framework.Vector3 v)
+        {
+            return new Microsoft.Xna.Framework.Vector3(Math.Abs(v.X), Math.Abs(v.Y), Math.Abs(v.Z));
+        }
+
         public static bool Contains(this BoundingBox b, Vector3 v)
         {
             return b.Min.X <= v.X && b.Min.Y <= v.Y && b.Min.Z <= v.Z &&
