@@ -119,6 +119,11 @@ namespace LD30
             #endregion
 
             #region props
+            // to whom it may concern: the whole "p + new Vector(...) * s - Vector3.UnitZ * ..." is wholly irrelevant;
+            // it never should have been happening here and it was moved to the PropInstance constructor where it could be
+            // done more accurately. Because I completely reset the position there, I don't need to remove all that junk
+            // here, and don't feel like taking the time to. It doesn't hurt anything except adding fractions of fractions
+            // of seconds to the load time.
             GeneralCategory.Add(new Prop(content.Load<Model>("models/general/cube"), new Vector3(1, 1, 1), true, true, true, true, "Cube", "The basic building block of all life.",
                 (p, s) => new BEPUphysics.Entities.Prefabs.Box(p + new Vector3(0.5f) * s, s.X * 0.98f, s.Y * 0.98f, s.Z * 0.98f))); // make the cubes a little smaller to go easy on the physics engine
             yield return progress();

@@ -289,11 +289,11 @@ namespace LD30
                                 {
                                     currGridPos = temp;
                                     placingObject.Position = currGridPos - (placingObject.Scale - Vector3.One);
-                                    placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * placingObject.CorrectedScale * 0.5f + placingObject.InitialEntityTranslation * placingObject.Scale;
+                                    placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * placingObject.CorrectedScale * 0.5f + Vector3.Transform(placingObject.InitialEntityTranslation * placingObject.Scale, placingObject.Entity.Orientation);
                                     if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
                                         placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z * placingObject.CorrectedScale.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                     validLocation = EditableWorld.HasSupport(placingObject.CorrectedDimensions, placingObject.CorrectedScale,
-                                        normal * dir, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
+                                        -normal * dir.Abs(), (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z);
                                     if(validLocation)
                                         break;
                                 }
@@ -302,7 +302,7 @@ namespace LD30
                             {
                                 currGridPos = instance.Position + Vector3.UnitZ;
                                 placingObject.Position = currGridPos;
-                                placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * placingObject.CorrectedScale * 0.5f + placingObject.InitialEntityTranslation * placingObject.Scale;
+                                placingObject.Entity.Position = currGridPos + placingObject.CorrectedDimensions * placingObject.CorrectedScale * 0.5f + Vector3.Transform(placingObject.InitialEntityTranslation * placingObject.Scale, placingObject.Entity.Orientation);
                                 if(placingObject.Entity is BEPUphysics.Entities.Prefabs.Box)
                                     placingObject.Entity.Position = placingObject.Entity.Position - BEPUutilities.Vector3.UnitZ * (placingObject.CorrectedDimensions.Z * placingObject.CorrectedScale.Z - (placingObject.Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
                                 validLocation = placingObject.BaseProp.CanPlaceOnWall ? EditableWorld.GridOpen(placingObject.CorrectedDimensions, placingObject.CorrectedScale, (int)currGridPos.X, (int)currGridPos.Y, (int)currGridPos.Z) :

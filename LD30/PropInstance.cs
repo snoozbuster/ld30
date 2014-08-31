@@ -1,5 +1,6 @@
 ﻿using BEPUphysics.CollisionRuleManagement;
 using BEPUphysics.Entities;
+using ConversionHelper;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -36,20 +37,26 @@ namespace LD30
 
         public PropInstance(Vector3 scale, Vector3 position, float rotation, Color color, Entity entity, bool immobile, Prop baseProp, World w)
         {
-            Immobile = immobile;
-            this.scale = scale;
-            Position = position;
-            Entity = entity;
-            if(Entity.Tag != null && Entity.Tag is BEPUutilities.Vector3)
-                InitialEntityTranslation = (BEPUutilities.Vector3)Entity.Tag;
-            Entity.CollisionInformation.Tag = this;
-            Entity.Tag = this;
-            Entity.Orientation = Rotation;
-            RotationAngle = rotation;
             Color = color;
             BaseProp = baseProp;
             ContainingWorld = w;
             Alpha = 1;
+            Immobile = immobile;
+            this.scale = scale;
+            Position = position;
+            Entity = entity;
+            RotationAngle = rotation;
+            Entity.Orientation = Rotation;
+            Entity.Position = position + CorrectedDimensions * CorrectedScale * 0.5f;
+            if(Entity.Tag != null && Entity.Tag is BEPUutilities.Vector3)
+            {
+                InitialEntityTranslation = (BEPUutilities.Vector3)Entity.Tag;
+                Entity.Position += MathConverter.Convert(Vector3.Transform(InitialEntityTranslation * scale, Entity.Orientation));
+            }
+            if(Entity is BEPUphysics.Entities.Prefabs.Box)
+                Entity.Position = Entity.Position - BEPUutilities.Vector3.UnitZ * (CorrectedDimensions.Z * CorrectedScale.Z - (Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
+            Entity.CollisionInformation.Tag = this;
+            Entity.Tag = this;
         }
 
         // must be added to world and space
