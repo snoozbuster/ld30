@@ -47,14 +47,18 @@ namespace LD30
             Entity = entity;
             RotationAngle = rotation;
             Entity.Orientation = Rotation;
-            Entity.Position = position + CorrectedDimensions * CorrectedScale * 0.5f;
-            if(Entity.Tag != null && Entity.Tag is BEPUutilities.Vector3)
+            if(ContainingWorld != null)
             {
-                InitialEntityTranslation = (BEPUutilities.Vector3)Entity.Tag;
-                Entity.Position += MathConverter.Convert(Vector3.Transform(InitialEntityTranslation * scale, Entity.Orientation));
+                Entity.Position = position + CorrectedDimensions * CorrectedScale * 0.5f;
+                if(Entity.Tag != null && Entity.Tag is BEPUutilities.Vector3)
+                {
+                    InitialEntityTranslation = (BEPUutilities.Vector3)Entity.Tag;
+                    Entity.Position += MathConverter.Convert(Vector3.Transform(InitialEntityTranslation * scale, Entity.Orientation));
+                }
+                if(Entity is BEPUphysics.Entities.Prefabs.Box)
+                    Entity.Position = Entity.Position - BEPUutilities.Vector3.UnitZ * (CorrectedDimensions.Z * CorrectedScale.Z - (Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
+                Entity.Position += ContainingWorld.WorldPosition;
             }
-            if(Entity is BEPUphysics.Entities.Prefabs.Box)
-                Entity.Position = Entity.Position - BEPUutilities.Vector3.UnitZ * (CorrectedDimensions.Z * CorrectedScale.Z - (Entity as BEPUphysics.Entities.Prefabs.Box).Length) * 0.5f;
             Entity.CollisionInformation.Tag = this;
             Entity.Tag = this;
         }
