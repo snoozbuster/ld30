@@ -268,7 +268,7 @@ namespace LD30
                             // found! convert to world pos (unlike most props, the bridge uses world coords, not grid coords)
                             // although these numbers are based in math they are also largely arbitrary
                             success = true;
-                            pos = new Vector3(x - 5 * Math.Abs(dir.X) + Math.Abs(dir.Y - 1) - (dir.X < 0 ? 2 : 0), y - 5 * Math.Abs(dir.Y) + Math.Abs(dir.X - 1) - (dir.Y < 0 ? 2 : 0), z - 0.1f);
+                            pos = new Vector3(x - 5 * Math.Abs(dir.X), y - 5 * Math.Abs(dir.Y), z - 0.1f);
                             break;
                         }
 
